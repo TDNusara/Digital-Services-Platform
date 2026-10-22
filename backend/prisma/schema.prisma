@@ -1,0 +1,363 @@
+// Prisma schema for TaskPulse Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  phone         String?
+  role          String    @default("CUSTOMER") // CUSTOMER, WORKER, ADMIN
+  status        String    @default("ACTIVE")   // ACTIVE, PENDING_APPROVAL, SUSPENDED
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customerProfile  CustomerProfile?
+  workerProfile    WorkerProfile?
+  ordersPlaced     Order[]           @relation("CustomerOrders")
+  assignedOrders   WorkerAssignment[] @relation("WorkerAssigned")
+  assignmentsMade  WorkerAssignment[] @relation("AdminAssigned")
+  orderFiles       OrderFile[]
+  statusChanges    OrderStatusHistory[]
+  workSubmissions  WorkSubmission[]  @relation("WorkerSubmissions")
+  qcReviewsDone    WorkSubmission[]  @relation("AdminQCReviews")
+  paymentsMade     Payment[]
+  reviewsGiven     Review[]          @relation("CustomerReviews")
+  reviewsReceived  Review[]          @relation("WorkerReviews")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model CustomerProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  city             String?
+  country          String   @default("Sri Lanka")
+  preferredLanguage String  @default("en")
+  totalOrdersCount Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("customer_profiles")
+}
+
+model WorkerProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  headline           String?
+  bio                String?
+  experienceYears    Int      @default(0)
+  verificationStatus String   @default("PENDING") // PENDING, APPROVED, REJECTED, SUSPENDED
+  ratingAvg          Float    @default(0.0)
+  ratingCount        Int      @default(0)
+  totalCompletedJobs Int      @default(0)
+  isAvailable        Boolean  @default(true)
+  idProofUrl         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills             WorkerSkill[]
+  categories         WorkerCategory[]
+  wallet             WorkerWallet?
+  payoutRequests     PayoutRequest[]
+
+  @@map("worker_profiles")
+}
+
+model WorkerSkill {
+  id              String        @id @default(uuid())
+  workerProfileId String
+  skillName       String
+
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+
+  @@map("worker_skills")
+}
+
+model WorkerCategory {
+  id              String          @id @default(uuid())
+  workerProfileId String
+  categoryId      String
+
+  workerProfile   WorkerProfile   @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  category        ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([workerProfileId, categoryId])
+  @@map("worker_categories")
+}
+
+model ServiceCategory {
+  id           String    @id @default(uuid())
+  name         String
+  slug         String    @unique
+  description  String?
+  icon         String?
+  displayOrder Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  services         Service[]
+  orders           Order[]
+  workerCategories WorkerCategory[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id                String          @id @default(uuid())
+  categoryId        String
+  title             String
+  slug              String          @unique
+  shortSummary      String?
+  description       String?
+  basePrice         Float           @default(0.0)
+  turnaroundHours   Int             @default(48)
+  requirementSchema String          @default("[]") // JSON string of dynamic form fields
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  category          ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orders            Order[]
+
+  @@map("services")
+}
+
+model Order {
+  id                     String    @id @default(uuid())
+  orderNumber            String    @unique // ORD-YYYY-XXXXX
+  customerId             String
+  serviceId              String?
+  categoryId             String?
+  title                  String
+  requirementsData       String    @default("{}") // JSON string of filled requirements
+  status                 String    @default("PENDING_REVIEW")
+  targetDeadline         DateTime
+  quotedPrice            Float?
+  platformCommissionRate Float     @default(0.20)
+  platformFee            Float     @default(0.0)
+  workerPayout           Float     @default(0.0)
+  quotationNotes         String?
+  revisionsAllowed       Int       @default(2)
+  revisionsUsed          Int       @default(0)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  customer         User                 @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)
+  service          Service?             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  category         ServiceCategory?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  files            OrderFile[]
+  statusHistory    OrderStatusHistory[]
+  assignments      WorkerAssignment[]
+  submissions      WorkSubmission[]
+  revisions        OrderRevision[]
+  payments         Payment[]
+  review           Review?
+
+  @@map("orders")
+}
+
+model OrderStatusHistory {
+  id          String   @id @default(uuid())
+  orderId     String
+  fromStatus  String?
+  toStatus    String
+  changedById String
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy   User     @relation(fields: [changedById], references: [id], onDelete: Restrict)
+
+  @@map("order_status_history")
+}
+
+model OrderFile {
+  id               String   @id @default(uuid())
+  orderId          String
+  uploaderId       String
+  fileTag          String   // CUSTOMER_ORIGINAL, CUSTOMER_ADDITIONAL, WORKER_DRAFT, FINAL_DELIVERABLE, QC_ANNOTATION
+  originalFilename String
+  storageFilename  String
+  fileSizeBytes    Int
+  mimeType         String
+  filePath         String
+  createdAt        DateTime @default(now())
+
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  uploader         User     @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
+
+  @@map("order_files")
+}
+
+model WorkerAssignment {
+  id               String    @id @default(uuid())
+  orderId          String
+  workerId         String
+  assignedById     String
+  status           String    @default("OFFERED") // OFFERED, ACCEPTED, DECLINED, EXPIRED, REASSIGNED
+  responseDeadline DateTime
+  respondedAt      DateTime?
+  declineReason    String?
+  createdAt        DateTime  @default(now())
+
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  worker           User      @relation("WorkerAssigned", fields: [workerId], references: [id], onDelete: Restrict)
+  assignedBy       User      @relation("AdminAssigned", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@map("worker_assignments")
+}
+
+model WorkSubmission {
+  id              String    @id @default(uuid())
+  orderId         String
+  workerId        String
+  submissionNotes String?
+  status          String    @default("PENDING_QC") // PENDING_QC, APPROVED_BY_ADMIN, REVISION_REQUIRED
+  qcFeedback      String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  worker          User      @relation("WorkerSubmissions", fields: [workerId], references: [id], onDelete: Restrict)
+  reviewedBy      User?     @relation("AdminQCReviews", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@map("work_submissions")
+}
+
+model OrderRevision {
+  id          String    @id @default(uuid())
+  orderId     String
+  reason      String
+  details     String
+  status      String    @default("REQUESTED") // REQUESTED, ACCEPTED, DECLINED
+  adminNotes  String?
+  createdAt   DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_revisions")
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  orderId          String
+  customerId       String
+  amount           Float
+  currency         String   @default("LKR")
+  paymentMethod    String   @default("PAYHERE")
+  gatewayReference String?
+  payherePaymentId String?
+  status           String   @default("PENDING") // PENDING, COMPLETED, FAILED, REFUNDED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  customer         User     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@map("payments")
+}
+
+model WorkerWallet {
+  id               String   @id @default(uuid())
+  workerProfileId  String   @unique
+  currentBalance   Float    @default(0.0)
+  pendingClearance Float    @default(0.0)
+  totalWithdrawn   Float    @default(0.0)
+  updatedAt        DateTime @updatedAt
+
+  workerProfile    WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+  transactions     WalletTransaction[]
+
+  @@map("worker_wallets")
+}
+
+model WalletTransaction {
+  id          String   @id @default(uuid())
+  walletId    String
+  orderId     String?
+  type        String   // EARNING, WITHDRAWAL, REFUND_DEDUCTION, ADJUSTMENT
+  amount      Float
+  description String
+  createdAt   DateTime @default(now())
+
+  wallet      WorkerWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+}
+
+model PayoutRequest {
+  id              String    @id @default(uuid())
+  workerProfileId String
+  amount          Float
+  status          String    @default("PENDING") // PENDING, PROCESSED, REJECTED
+  bankDetails     String    // JSON string of bank name, branch, account number, name
+  processedAt     DateTime?
+  adminNotes      String?
+  createdAt       DateTime  @default(now())
+
+  workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
+
+  @@map("payout_requests")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  orderId    String   @unique
+  customerId String
+  workerId   String
+  rating     Int
+  comment    String?
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer   User     @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Restrict)
+  worker     User     @relation("WorkerReviews", fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@map("reviews")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  targetType String
+  targetId   String?
+  ipAddress  String?
+  details    String?  // JSON string
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
