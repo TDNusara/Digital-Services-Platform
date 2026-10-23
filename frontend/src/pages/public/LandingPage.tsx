@@ -263,7 +263,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     color: 'var(--primary-400)',
                   }}
                 >
-                  <span>{cat._count?.services || 0} Available Packages</span>
+                  <span>{cat._count?.services || 0} Digital Services</span>
                   <ArrowRight size={16} />
                 </div>
               </div>
@@ -383,7 +383,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <h4 style={{ marginBottom: '0.5rem' }}>Submit Request & Files</h4>
               <p style={{ fontSize: '0.875rem' }}>
-                Select a standard package or describe custom requirements and upload relevant documents.
+                Select a fixed-price service or describe custom requirements and upload relevant documents.
               </p>
             </div>
 

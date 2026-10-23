@@ -123,7 +123,9 @@ model Service {
   slug              String          @unique
   shortSummary      String?
   description       String?
+  pricingType       String          @default("CUSTOM_QUOTE") // FIXED, CUSTOM_QUOTE
   basePrice         Float           @default(0.0)
+  targetAudience    String?         // Students, Job Seekers, Employees, Businesses, General
   turnaroundHours   Int             @default(48)
   requirementSchema String          @default("[]") // JSON string of dynamic form fields
   isActive          Boolean         @default(true)

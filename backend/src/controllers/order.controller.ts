@@ -24,16 +24,20 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
     let initialPrice: number | null = null;
     let initialPlatformFee = 0;
     let initialWorkerPayout = 0;
+    let initialStatus = 'PENDING_REVIEW';
+    let initialNotes = 'Order submitted by customer. Awaiting administrator review and quotation.';
 
     // If an existing fixed-price service was chosen
     if (serviceId) {
       const selectedService = await prisma.service.findUnique({
         where: { id: serviceId },
       });
-      if (selectedService && selectedService.basePrice > 0) {
+      if (selectedService && selectedService.pricingType === 'FIXED' && selectedService.basePrice > 0) {
         initialPrice = selectedService.basePrice;
         initialPlatformFee = initialPrice * config.commissionRate;
         initialWorkerPayout = initialPrice - initialPlatformFee;
+        initialStatus = 'AWAITING_PAYMENT';
+        initialNotes = `Fixed-price service selected (LKR ${initialPrice.toLocaleString()}). Ready for immediate payment.`;
       }
     }
 
@@ -46,7 +50,7 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
         title: title.trim(),
         requirementsData: typeof requirementsData === 'string' ? requirementsData : JSON.stringify(requirementsData || {}),
         targetDeadline: new Date(targetDeadline),
-        status: 'PENDING_REVIEW',
+        status: initialStatus,
         quotedPrice: initialPrice,
         platformCommissionRate: config.commissionRate,
         platformFee: initialPlatformFee,
@@ -54,9 +58,9 @@ export const createOrder = async (req: AuthenticatedRequest, res: Response): Pro
         statusHistory: {
           create: {
             fromStatus: null,
-            toStatus: 'PENDING_REVIEW',
+            toStatus: initialStatus,
             changedById: customerId,
-            notes: 'Order initiated by customer.',
+            notes: initialNotes,
           },
         },
         files: files && files.length > 0

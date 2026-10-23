@@ -29,6 +29,7 @@ const MainApplication: React.FC = () => {
   // Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
+  const [isCustomOrderMode, setIsCustomOrderMode] = useState(false);
   const [preSelectedService, setPreSelectedService] = useState<any | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any | null>(null);
 
@@ -71,7 +72,8 @@ const MainApplication: React.FC = () => {
     loadOrders();
   }, [isAuthenticated, user?.role]);
 
-  const handleSelectServiceToOrder = (service: any) => {
+  const handleOpenOrderModal = (customMode: boolean = false, service: any = null) => {
+    setIsCustomOrderMode(customMode);
     setPreSelectedService(service);
     setIsNewOrderModalOpen(true);
   };
@@ -102,10 +104,7 @@ const MainApplication: React.FC = () => {
         currentTab={currentTab}
         setCurrentTab={(tab) => setCurrentTab(tab as any)}
         openLoginModal={() => setIsAuthModalOpen(true)}
-        openNewOrderModal={() => {
-          setPreSelectedService(null);
-          setIsNewOrderModalOpen(true);
-        }}
+        openNewOrderModal={() => handleOpenOrderModal(false, null)}
       />
 
       {/* Main View Router */}
@@ -117,10 +116,7 @@ const MainApplication: React.FC = () => {
               setSelectedCategory(slug);
               setCurrentTab('catalog');
             }}
-            openNewOrderModal={() => {
-              setPreSelectedService(null);
-              setIsNewOrderModalOpen(true);
-            }}
+            openNewOrderModal={() => handleOpenOrderModal(false, null)}
             setCurrentTab={(tab) => setCurrentTab(tab as any)}
           />
         )}
@@ -131,7 +127,8 @@ const MainApplication: React.FC = () => {
             services={services}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
-            onSelectServiceToOrder={handleSelectServiceToOrder}
+            onSelectServiceToOrder={(service) => handleOpenOrderModal(false, service)}
+            onRequestCustomService={() => handleOpenOrderModal(true, null)}
           />
         )}
 
@@ -154,6 +151,8 @@ const MainApplication: React.FC = () => {
                 orders={orders}
                 onOpenOrderDetails={setSelectedOrderDetails}
                 onRefresh={loadOrders}
+                categories={categories}
+                onServicesUpdated={loadPlatformCatalog}
               />
             ) : user?.role === 'WORKER' ? (
               <WorkerWorkspace
@@ -165,10 +164,7 @@ const MainApplication: React.FC = () => {
               <CustomerPortal
                 orders={orders}
                 onOpenOrderDetails={setSelectedOrderDetails}
-                onOpenNewOrderModal={() => {
-                  setPreSelectedService(null);
-                  setIsNewOrderModalOpen(true);
-                }}
+                onOpenNewOrderModal={(customMode) => handleOpenOrderModal(Boolean(customMode), null)}
               />
             )}
           </div>
@@ -187,6 +183,7 @@ const MainApplication: React.FC = () => {
         categories={categories}
         services={services}
         preSelectedService={preSelectedService}
+        initialCustomMode={isCustomOrderMode}
         onOrderCreated={handleOrderCreated}
       />
 

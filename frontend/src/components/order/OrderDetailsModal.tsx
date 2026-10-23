@@ -379,7 +379,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     Quoted Price: LKR {(order.quotedPrice || 0).toLocaleString()}
                   </div>
                   <p style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
-                    {order.quotationNotes || 'Standard package pricing confirmed.'}
+                    {order.quotationNotes || 'Service pricing confirmed.'}
                   </p>
                   {isCustomer ? (
                     <button className="btn btn-primary btn-sm" onClick={handleAcceptQuote} disabled={isProcessing}>
