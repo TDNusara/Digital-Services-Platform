@@ -8,24 +8,45 @@ import {
   Layers,
   ChevronDown,
   Briefcase,
-  CheckCircle2,
+  UserPlus,
 } from 'lucide-react';
 
 interface NavbarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
-  openLoginModal: () => void;
   openNewOrderModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   setCurrentTab,
-  openLoginModal,
   openNewOrderModal,
 }) => {
   const { user, isAuthenticated, logout, switchDemoAccount } = useAuth();
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showRegisterMenu, setShowRegisterMenu] = useState(false);
+
+  const handleDemoSwitch = async (role: 'CUSTOMER' | 'WORKER' | 'ADMIN') => {
+    await switchDemoAccount(role);
+    if (role === 'ADMIN') {
+      setCurrentTab('admin-control');
+    } else if (role === 'WORKER') {
+      setCurrentTab('worker-workspace');
+    } else {
+      setCurrentTab('customer-portal');
+    }
+  };
+
+  const getRoleDashboardTab = () => {
+    if (user?.role === 'ADMIN') return 'admin-control';
+    if (user?.role === 'WORKER') return 'worker-workspace';
+    return 'customer-portal';
+  };
+
+  const getRoleDashboardLabel = () => {
+    if (user?.role === 'ADMIN') return '🛡️ Admin Control';
+    if (user?.role === 'WORKER') return '💼 Specialist Workspace';
+    return '👤 Customer Portal';
+  };
 
   return (
     <header
@@ -33,73 +54,74 @@ export const Navbar: React.FC<NavbarProps> = ({
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        backgroundColor: 'rgba(11, 15, 25, 0.85)',
+        backgroundColor: 'rgba(11, 15, 25, 0.9)',
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
-      {/* Top Demo Switcher Ribbon */}
+      {/* Top Demo Switcher Ribbon (1-Click Tester) */}
       <div
         style={{
           background: 'linear-gradient(90deg, #1E1B4B 0%, #312E81 50%, #1E1B4B 100%)',
-          padding: '0.4rem 1rem',
-          fontSize: '0.8rem',
+          padding: '0.35rem 1rem',
+          fontSize: '0.78rem',
           color: '#E0E7FF',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '1rem',
+          gap: '0.75rem',
           borderBottom: '1px solid rgba(99, 102, 241, 0.25)',
+          flexWrap: 'wrap',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <Sparkles size={14} color="#818CF8" />
-          <strong>Quick Role Switcher:</strong>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#A5B4FC' }}>
+          <Sparkles size={13} color="#818CF8" />
+          <strong>Independent Role Pages (1-Click Switch):</strong>
         </span>
         <button
-          onClick={() => switchDemoAccount('CUSTOMER')}
+          onClick={() => handleDemoSwitch('CUSTOMER')}
           style={{
-            background: user?.role === 'CUSTOMER' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.1)',
+            background: user?.role === 'CUSTOMER' && currentTab === 'customer-portal' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.1)',
             color: '#FFFFFF',
             border: 'none',
             padding: '0.2rem 0.6rem',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             fontWeight: 600,
           }}
         >
-          👤 Customer Portal
+          👤 Customer Page
         </button>
         <button
-          onClick={() => switchDemoAccount('WORKER')}
+          onClick={() => handleDemoSwitch('WORKER')}
           style={{
-            background: user?.role === 'WORKER' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.1)',
+            background: user?.role === 'WORKER' && currentTab === 'worker-workspace' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.1)',
             color: '#FFFFFF',
             border: 'none',
             padding: '0.2rem 0.6rem',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             fontWeight: 600,
           }}
         >
-          💼 Worker Workspace
+          💼 Specialist Page
         </button>
         <button
-          onClick={() => switchDemoAccount('ADMIN')}
+          onClick={() => handleDemoSwitch('ADMIN')}
           style={{
-            background: user?.role === 'ADMIN' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.1)',
+            background: user?.role === 'ADMIN' && currentTab === 'admin-control' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.1)',
             color: '#FFFFFF',
             border: 'none',
             padding: '0.2rem 0.6rem',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             fontWeight: 600,
           }}
         >
-          🛡️ Admin Control Center
+          🛡️ Admin Page
         </button>
       </div>
 
@@ -124,8 +146,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <div
             style={{
-              width: '2.5rem',
-              height: '2.5rem',
+              width: '2.4rem',
+              height: '2.4rem',
               borderRadius: 'var(--radius-md)',
               background: 'linear-gradient(135deg, var(--primary-500), #8B5CF6)',
               display: 'flex',
@@ -134,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               boxShadow: 'var(--shadow-glow)',
             }}
           >
-            <Layers size={22} color="#FFFFFF" />
+            <Layers size={20} color="#FFFFFF" />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -152,10 +174,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   border: '1px solid rgba(99, 102, 241, 0.4)',
                 }}
               >
-                PRO
+                PLATFORM
               </span>
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)' }}>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-sub)' }}>
               Managed Digital & Document Services
             </div>
           </div>
@@ -195,50 +217,48 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Services Catalog
           </button>
+
+          {/* Active Role Portal Tab (if logged in) */}
           {isAuthenticated && (
             <button
-              onClick={() => setCurrentTab('portal')}
+              onClick={() => setCurrentTab(getRoleDashboardTab())}
               style={{
                 background: 'none',
                 border: 'none',
-                color: currentTab === 'portal' ? 'var(--primary-300)' : 'var(--text-muted)',
+                color: currentTab === getRoleDashboardTab() ? 'var(--primary-300)' : 'var(--text-muted)',
                 fontSize: '0.925rem',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
-                borderBottom: currentTab === 'portal' ? '2px solid var(--primary-500)' : '2px solid transparent',
+                borderBottom: currentTab === getRoleDashboardTab() ? '2px solid var(--primary-500)' : '2px solid transparent',
                 paddingBottom: '0.25rem',
                 transition: 'all var(--transition-fast)',
               }}
             >
-              {user?.role === 'ADMIN'
-                ? 'Admin Control'
-                : user?.role === 'WORKER'
-                ? 'Worker Workspace'
-                : 'My Orders & Requests'}
+              {getRoleDashboardLabel()}
             </button>
           )}
         </nav>
 
         {/* Right Action Cluster */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           <button
             className="btn btn-primary btn-sm"
             onClick={openNewOrderModal}
             style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
           >
-            <Sparkles size={16} />
+            <Sparkles size={15} />
             <span>Request Service</span>
           </button>
 
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <div
-                onClick={() => setCurrentTab('portal')}
+                onClick={() => setCurrentTab(getRoleDashboardTab())}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.6rem',
-                  padding: '0.4rem 0.8rem',
+                  padding: '0.35rem 0.75rem',
                   background: 'var(--bg-surface)',
                   borderRadius: 'var(--radius-md)',
                   cursor: 'pointer',
@@ -250,28 +270,38 @@ export const Navbar: React.FC<NavbarProps> = ({
                     width: '1.8rem',
                     height: '1.8rem',
                     borderRadius: '50%',
-                    backgroundColor: 'var(--primary-600)',
+                    backgroundColor: user?.role === 'ADMIN' ? 'var(--warning)' : user?.role === 'WORKER' ? '#0284C7' : 'var(--primary-600)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 700,
                     fontSize: '0.8rem',
+                    color: '#FFFFFF',
                   }}
                 >
-                  {user?.fullName.charAt(0)}
+                  {user?.fullName?.charAt(0) || 'U'}
                 </div>
                 <div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                    {user?.fullName.split(' ')[0]}
+                    {user?.fullName?.split(' ')[0]}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--primary-300)', fontWeight: 600 }}>
+                  <div
+                    style={{
+                      fontSize: '0.68rem',
+                      color: user?.role === 'ADMIN' ? 'var(--warning)' : user?.role === 'WORKER' ? '#38BDF8' : 'var(--primary-300)',
+                      fontWeight: 700,
+                    }}
+                  >
                     {user?.role}
                   </div>
                 </div>
               </div>
 
               <button
-                onClick={logout}
+                onClick={() => {
+                  logout();
+                  setCurrentTab('login');
+                }}
                 title="Logout"
                 style={{
                   background: 'transparent',
@@ -286,10 +316,103 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
           ) : (
-            <button className="btn btn-secondary btn-sm" onClick={openLoginModal}>
-              <User size={16} />
-              <span>Sign In</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+              <button
+                className={`btn btn-sm ${currentTab === 'login' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setCurrentTab('login')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <User size={15} />
+                <span>Sign In</span>
+              </button>
+
+              <div style={{ position: 'relative' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setShowRegisterMenu(!showRegisterMenu)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <UserPlus size={15} />
+                  <span>Register</span>
+                  <ChevronDown size={13} />
+                </button>
+
+                {showRegisterMenu && (
+                  <div
+                    className="glass-card"
+                    style={{
+                      position: 'absolute',
+                      right: 0,
+                      top: 'calc(100% + 0.5rem)',
+                      width: '240px',
+                      padding: '0.5rem',
+                      zIndex: 200,
+                      boxShadow: 'var(--shadow-xl)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem',
+                    }}
+                    onMouseLeave={() => setShowRegisterMenu(false)}
+                  >
+                    <button
+                      onClick={() => {
+                        setShowRegisterMenu(false);
+                        setCurrentTab('register-customer');
+                      }}
+                      style={{
+                        padding: '0.65rem 0.75rem',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        color: 'var(--text-main)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.15rem',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#FFFFFF' }}>
+                        👤 Register as Customer
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>
+                        For students, businesses, & employees
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowRegisterMenu(false);
+                        setCurrentTab('register-worker');
+                      }}
+                      style={{
+                        padding: '0.65rem 0.75rem',
+                        textAlign: 'left',
+                        background: 'transparent',
+                        border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        color: 'var(--text-main)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.15rem',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#38BDF8' }}>
+                        💼 Apply as Specialist
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>
+                        For freelancers & document experts
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

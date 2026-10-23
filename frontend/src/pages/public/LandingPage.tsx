@@ -125,8 +125,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span>Request a Service</span>
             </button>
             <button className="btn btn-secondary btn-lg" onClick={() => setCurrentTab('catalog')}>
-              <span>Browse 12 Categories</span>
+              <span>Browse Digital Services</span>
               <ArrowRight size={18} />
+            </button>
+            <button
+              className="btn btn-outline btn-lg"
+              onClick={() => setCurrentTab('register-customer')}
+              style={{ borderColor: 'rgba(99, 102, 241, 0.5)', color: 'var(--primary-300)' }}
+            >
+              <Users size={18} />
+              <span>Register as Customer</span>
+            </button>
+            <button
+              className="btn btn-outline btn-lg"
+              onClick={() => setCurrentTab('register-worker')}
+              style={{ borderColor: 'rgba(56, 189, 248, 0.5)', color: '#38BDF8' }}
+            >
+              <Briefcase size={18} />
+              <span>Join as Specialist</span>
             </button>
           </div>
 
