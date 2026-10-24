@@ -7,6 +7,9 @@ import {
   acceptQuotation,
   requestRevision,
   completeOrder,
+  cancelOrder,
+  getOrderMessages,
+  sendOrderMessage,
 } from '../controllers/order.controller';
 import { requireAuth } from '../middleware/auth.middleware';
 import { requireRole } from '../middleware/role.middleware';
@@ -24,8 +27,14 @@ router.get('/:id', getOrderById);
 router.post('/:id/quote', requireRole('ADMIN'), sendQuotation);
 router.post('/:id/accept-quote', requireRole('CUSTOMER'), acceptQuotation);
 
-// Customer Revision & Completion
+// Customer Revision & Completion & Cancellation
 router.post('/:id/revision', requireRole('CUSTOMER'), requestRevision);
 router.post('/:id/complete', requireRole('CUSTOMER'), completeOrder);
+router.post('/:id/cancel', cancelOrder);
+
+// Order Messages / Admin Communication
+router.get('/:id/messages', getOrderMessages);
+router.post('/:id/messages', sendOrderMessage);
 
 export default router;
+

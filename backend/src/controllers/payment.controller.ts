@@ -179,8 +179,43 @@ export const mockSandboxPayment = async (req: AuthenticatedRequest, res: Respons
       }),
     ]);
 
+    // Notify Customer about payment
+    await prisma.notification.create({
+      data: {
+        userId: customerId,
+        title: `Payment Confirmed: ${order.orderNumber}`,
+        message: `Your payment of LKR ${amount.toLocaleString()} was successfully processed and locked in escrow.`,
+        link: `/customer/orders/${order.id}`,
+      },
+    });
+
     res.json({ message: 'Sandbox payment completed! Order is now Ready for Assignment.' });
   } catch (error: any) {
     res.status(500).json({ error: 'Mock payment failed: ' + error.message });
+  }
+};
+
+export const getCustomerTransactions = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const customerId = req.user!.userId;
+
+    const payments = await prisma.payment.findMany({
+      where: { customerId },
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderNumber: true,
+            title: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ payments });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch transactions: ' + error.message });
   }
 };

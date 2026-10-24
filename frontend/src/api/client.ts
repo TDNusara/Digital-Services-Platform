@@ -65,6 +65,21 @@ class ApiClient {
     return json;
   }
 
+  async patch<T = any>(endpoint: string, body?: any): Promise<T> {
+    const isFormData = body instanceof FormData;
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'PATCH',
+      headers: this.getHeaders(isFormData),
+      body: isFormData ? body : JSON.stringify(body || {}),
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error || 'Request failed');
+    }
+    return json;
+  }
+
   async delete<T = any>(endpoint: string): Promise<T> {
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',

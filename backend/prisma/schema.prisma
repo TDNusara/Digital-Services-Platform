@@ -35,6 +35,7 @@ model User {
   reviewsReceived  Review[]          @relation("WorkerReviews")
   notifications    Notification[]
   auditLogs        AuditLog[]
+  orderMessages    OrderMessage[]
 
   @@map("users")
 }
@@ -155,6 +156,7 @@ model Order {
   quotationNotes         String?
   revisionsAllowed       Int       @default(2)
   revisionsUsed          Int       @default(0)
+  cancellationReason     String?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 
@@ -168,6 +170,7 @@ model Order {
   revisions        OrderRevision[]
   payments         Payment[]
   review           Review?
+  messages         OrderMessage[]
 
   @@map("orders")
 }
@@ -362,4 +365,17 @@ model AuditLog {
   user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
+}
+
+model OrderMessage {
+  id        String   @id @default(uuid())
+  orderId   String
+  senderId  String
+  message   String
+  createdAt DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@map("order_messages")
 }

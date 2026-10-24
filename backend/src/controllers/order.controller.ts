@@ -209,6 +209,14 @@ export const getOrderById = async (req: AuthenticatedRequest, res: Response): Pr
         },
         payments: true,
         review: true,
+        messages: {
+          include: {
+            sender: {
+              select: { id: true, fullName: true, role: true, avatarUrl: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -471,5 +479,226 @@ export const completeOrder = async (req: AuthenticatedRequest, res: Response): P
     res.json({ message: 'Order completed! You can now rate and review the service.', order: updated });
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to complete order.' });
+  }
+};
+
+export const cancelOrder = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { reason = 'Order cancelled by customer.' } = req.body;
+    const { userId, role, fullName } = req.user!;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { customer: true },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const isCustomer = order.customerId === userId;
+    const isAdmin = role === 'ADMIN';
+
+    if (!isCustomer && !isAdmin) {
+      res.status(403).json({ error: 'You are not authorized to cancel this order.' });
+      return;
+    }
+
+    if (order.status === 'CANCELLED') {
+      res.status(400).json({ error: 'Order is already cancelled.' });
+      return;
+    }
+
+    if (order.status === 'COMPLETED') {
+      res.status(400).json({ error: 'Completed orders cannot be cancelled.' });
+      return;
+    }
+
+    // Cancellation policy checks
+    const allowableInstantStatuses = ['PENDING_REVIEW', 'QUOTATION_SENT', 'AWAITING_PAYMENT'];
+    const isInExecution = ['READY_FOR_ASSIGNMENT', 'AWAITING_WORKER_ACCEPTANCE', 'IN_PROGRESS', 'SUBMITTED_FOR_QC'].includes(order.status);
+
+    let statusNote = `Order cancelled by ${role.toLowerCase()} (${fullName}). Reason: ${reason}`;
+    if (isInExecution) {
+      statusNote += ' (Platform refund procedure flagged for review).';
+    }
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        cancellationReason: reason,
+        statusHistory: {
+          create: {
+            fromStatus: order.status,
+            toStatus: 'CANCELLED',
+            changedById: userId,
+            notes: statusNote,
+          },
+        },
+      },
+    });
+
+    // Notify respective parties
+    if (isCustomer) {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+      await prisma.notification.createMany({
+        data: admins.map((adm) => ({
+          userId: adm.id,
+          title: `Order Cancelled: ${order.orderNumber}`,
+          message: `Customer cancelled order "${order.title}". Reason: ${reason}`,
+          link: `/admin/orders/${order.id}`,
+        })),
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: customerIdOrUserId(userId),
+          title: `Order Cancelled: ${order.orderNumber}`,
+          message: `Your order "${order.title}" has been successfully cancelled.`,
+          link: `/customer/orders/${order.id}`,
+        },
+      });
+    } else if (isAdmin) {
+      await prisma.notification.create({
+        data: {
+          userId: order.customerId,
+          title: `Order Cancelled by Admin: ${order.orderNumber}`,
+          message: `Your order was cancelled by platform administration. Reason: ${reason}`,
+          link: `/customer/orders/${order.id}`,
+        },
+      });
+    }
+
+    res.json({
+      message: 'Order has been cancelled according to platform cancellation policy.',
+      order: updated,
+    });
+  } catch (error: any) {
+    console.error('Cancel Order Error:', error);
+    res.status(500).json({ error: 'Failed to cancel order: ' + error.message });
+  }
+};
+
+function customerIdOrUserId(id: string): string {
+  return id;
+}
+
+export const getOrderMessages = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { userId, role } = req.user!;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        assignments: { where: { status: 'ACCEPTED' } },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const isCustomer = order.customerId === userId;
+    const isAssignedWorker = order.assignments.some((a) => a.workerId === userId);
+    const isAdmin = role === 'ADMIN';
+
+    if (!isCustomer && !isAssignedWorker && !isAdmin) {
+      res.status(403).json({ error: 'Access denied.' });
+      return;
+    }
+
+    const messages = await prisma.orderMessage.findMany({
+      where: { orderId: id },
+      include: {
+        sender: {
+          select: { id: true, fullName: true, role: true, avatarUrl: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json({ messages });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch order messages.' });
+  }
+};
+
+export const sendOrderMessage = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+    const { userId, role, fullName } = req.user!;
+
+    if (!message || !message.trim()) {
+      res.status(400).json({ error: 'Message text is required.' });
+      return;
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        assignments: { where: { status: 'ACCEPTED' } },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const isCustomer = order.customerId === userId;
+    const isAssignedWorker = order.assignments.some((a) => a.workerId === userId);
+    const isAdmin = role === 'ADMIN';
+
+    if (!isCustomer && !isAssignedWorker && !isAdmin) {
+      res.status(403).json({ error: 'Access denied.' });
+      return;
+    }
+
+    const newMsg = await prisma.orderMessage.create({
+      data: {
+        orderId: id,
+        senderId: userId,
+        message: message.trim(),
+      },
+      include: {
+        sender: {
+          select: { id: true, fullName: true, role: true, avatarUrl: true },
+        },
+      },
+    });
+
+    // Notify appropriate counterparty
+    if (isCustomer) {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((adm) => ({
+            userId: adm.id,
+            title: `Order Message: ${order.orderNumber}`,
+            message: `${fullName}: "${message.trim().slice(0, 75)}"`,
+            link: `/admin/orders/${order.id}`,
+          })),
+        });
+      }
+    } else if (isAdmin) {
+      await prisma.notification.create({
+        data: {
+          userId: order.customerId,
+          title: `Admin Message on ${order.orderNumber}`,
+          message: `Admin ${fullName}: "${message.trim().slice(0, 75)}"`,
+          link: `/customer/orders/${order.id}`,
+        },
+      });
+    }
+
+    res.status(201).json({ message: 'Message sent successfully.', orderMessage: newMsg });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to send message: ' + error.message });
   }
 };

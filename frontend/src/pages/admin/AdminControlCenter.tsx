@@ -28,6 +28,8 @@ interface AdminControlCenterProps {
   onRefresh: () => void;
   categories?: any[];
   onServicesUpdated?: () => void;
+  activeTab?: 'orders' | 'services' | 'workers';
+  onTabChange?: (tab: 'orders' | 'services' | 'workers') => void;
 }
 
 export const AdminControlCenter: React.FC<AdminControlCenterProps> = ({
@@ -36,8 +38,15 @@ export const AdminControlCenter: React.FC<AdminControlCenterProps> = ({
   onRefresh,
   categories = [],
   onServicesUpdated,
+  activeTab: propActiveTab,
+  onTabChange,
 }) => {
-  const [activeTab, setActiveTab] = useState<'orders' | 'services' | 'workers'>('orders');
+  const [internalTab, setInternalTab] = useState<'orders' | 'services' | 'workers'>('orders');
+  const activeTab = propActiveTab || internalTab;
+  const setActiveTab = (tab: any) => {
+    setInternalTab(tab);
+    if (onTabChange) onTabChange(tab);
+  };
   const [stats, setStats] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');

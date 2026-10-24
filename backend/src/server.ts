@@ -12,6 +12,8 @@ import fileRoutes from './routes/file.routes';
 import paymentRoutes from './routes/payment.routes';
 import adminRoutes from './routes/admin.routes';
 import reviewRoutes from './routes/review.routes';
+import customerRoutes from './routes/customer.routes';
+import notificationRoutes from './routes/notification.routes';
 
 const app = express();
 
@@ -38,6 +40,8 @@ app.get('/api/health', (req, res) => {
 
 // Register API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/customer', customerRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api', serviceRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/assignments', assignmentRoutes);
