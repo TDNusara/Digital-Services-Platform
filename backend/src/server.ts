@@ -20,7 +20,15 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile, curl, or same-origin proxy)
+      if (!origin) return callback(null, true);
+      // Allow any localhost or 127.0.0.1 port
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
