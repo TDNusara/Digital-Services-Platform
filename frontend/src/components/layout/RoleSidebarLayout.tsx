@@ -26,6 +26,7 @@ import {
   Inbox,
   Menu,
   Home,
+  Globe,
 } from 'lucide-react';
 import api from '../../api/client';
 
@@ -142,7 +143,10 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
         <div className="app-sidebar-header">
           {!isCollapsed ? (
             <div
-              onClick={() => onNavigate('home')}
+              onClick={() => {
+                onSelectSubTab('home');
+                if (role !== 'CUSTOMER') onNavigate('customer-portal');
+              }}
               style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer' }}
             >
               <div
@@ -178,7 +182,10 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
             </div>
           ) : (
             <div
-              onClick={() => onNavigate('home')}
+              onClick={() => {
+                onSelectSubTab('home');
+                if (role !== 'CUSTOMER') onNavigate('customer-portal');
+              }}
               style={{
                 width: '2.2rem',
                 height: '2.2rem',
@@ -281,20 +288,23 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem' }}>
                 <button
-                  onClick={() => onNavigate('home')}
+                  onClick={() => {
+                    onSelectSubTab('home');
+                    if (role !== 'CUSTOMER') onNavigate('customer-portal');
+                  }}
                   className="btn btn-secondary btn-sm"
                   style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
-                  title="View Public Website"
+                  title="Customer Home"
                 >
-                  <ExternalLink size={12} />
-                  <span>Public Site</span>
+                  <Home size={12} />
+                  <span>Customer Home</span>
                 </button>
                 <button
                   onClick={() => {
                     logout();
-                    onNavigate('login');
+                    onNavigate('home');
                   }}
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '0.35rem 0.5rem' }}
@@ -303,20 +313,40 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
                   <LogOut size={14} color="var(--danger)" />
                 </button>
               </div>
+
+              <button
+                onClick={() => onNavigate('guest-home')}
+                className="btn btn-secondary btn-sm"
+                style={{ width: '100%', fontSize: '0.72rem', padding: '0.3rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', color: 'var(--text-sub)' }}
+                title="View Guest / Public Home Page"
+              >
+                <Globe size={12} />
+                <span>Guest Home Page</span>
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
               <button
-                onClick={() => onNavigate('home')}
+                onClick={() => {
+                  onSelectSubTab('home');
+                  if (role !== 'CUSTOMER') onNavigate('customer-portal');
+                }}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-sub)', cursor: 'pointer' }}
-                title="Public Site"
+                title="Customer Home"
               >
-                <ExternalLink size={16} />
+                <Home size={16} />
+              </button>
+              <button
+                onClick={() => onNavigate('guest-home')}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-sub)', cursor: 'pointer' }}
+                title="View Guest Home Page"
+              >
+                <Globe size={16} />
               </button>
               <button
                 onClick={() => {
                   logout();
-                  onNavigate('login');
+                  onNavigate('home');
                 }}
                 style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}
                 title="Log Out"

@@ -298,7 +298,7 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <h1 style={{ fontSize: '2.2rem' }}>Customer Workspace</h1>
+            <h1 style={{ fontSize: '2.2rem' }}>Customer Home</h1>
             <span
               style={{
                 fontSize: '0.75rem',
@@ -310,11 +310,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
                 border: '1px solid rgba(99, 102, 241, 0.4)',
               }}
             >
-              CUSTOMER ROLE
+              CUSTOMER HUB
             </span>
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-            Welcome, <strong>{user?.fullName}</strong>! Request professional services, review quotations, track orders, communicate with administration, and download quality-checked work.
+            Welcome, <strong>{user?.fullName || 'Customer'}</strong>! Request professional services, review quotations, track orders, communicate with administration, and download quality-checked work.
           </p>
         </div>
 
@@ -533,6 +533,439 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* TAB 0: CUSTOMER HOME PAGE */}
+      {activeMainTab === 'home' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Welcome Hero Card */}
+          <div
+            className="glass-card"
+            style={{
+              padding: '2rem 2.25rem',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%)',
+              borderColor: 'rgba(99, 102, 241, 0.3)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ maxWidth: '680px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(99, 102, 241, 0.25)', padding: '0.2rem 0.65rem', borderRadius: 'var(--radius-full)', color: 'var(--primary-300)', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+                <Sparkles size={13} />
+                <span>CUSTOMER COMMAND HUB</span>
+              </div>
+              <h2 style={{ fontSize: '1.9rem', marginBottom: '0.6rem', color: '#FFFFFF', letterSpacing: '-0.02em' }}>
+                Welcome to Customer Home, {user?.fullName || 'Customer'}!
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                Request professional document drafting, academic assistance, proofreading, translation, or specialized business services. All orders feature upfront quotations, internal Quality Checks, and escrow payment protection.
+              </p>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => onOpenNewOrderModal(false, null)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Plus size={16} />
+                  <span>Order Available Service</span>
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => onOpenNewOrderModal(true, null)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Sparkles size={16} color="var(--primary-300)" />
+                  <span>Request Custom Service</span>
+                </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setActiveMainTab('services')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Search size={15} />
+                  <span>Browse All Services</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Orders In Progress Widget */}
+          {activeOrdersList.length > 0 && (
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Clock size={18} color="var(--primary-400)" />
+                  <h3 style={{ fontSize: '1.15rem', color: '#FFFFFF' }}>Active Tasks in Progress ({activeOrdersList.length})</h3>
+                </div>
+                <button
+                  onClick={() => setActiveMainTab('orders')}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary-300)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                >
+                  <span>View All Orders & History</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                {activeOrdersList.slice(0, 3).map((ord) => {
+                  const isAwaitingPay = ord.status === 'AWAITING_PAYMENT';
+                  const isQuoted = ord.status === 'QUOTATION_SENT';
+                  const isReady = ord.status === 'READY_FOR_CUSTOMER';
+
+                  return (
+                    <div
+                      key={ord.id}
+                      style={{
+                        padding: '1rem 1.25rem',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-subtle)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--primary-300)' }}>
+                            {ord.orderNumber}
+                          </span>
+                          <span className={`status-badge status-${ord.status}`} style={{ fontSize: '0.72rem' }}>
+                            {ord.status.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 600, color: '#FFFFFF', fontSize: '0.95rem', marginBottom: '0.35rem' }}>
+                          {ord.title}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-sub)', marginBottom: '0.75rem' }}>
+                          Target Deadline: {new Date(ord.targetDeadline).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.75rem', marginTop: '0.5rem' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.9rem', color: ord.quotedPrice ? '#FFFFFF' : 'var(--text-dim)' }}>
+                          {ord.quotedPrice ? `LKR ${ord.quotedPrice.toLocaleString()}` : 'Awaiting Quote'}
+                        </span>
+
+                        {isReady ? (
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => onOpenOrderDetails(ord)}
+                            style={{ display: 'inline-flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.75rem' }}
+                          >
+                            <Download size={13} />
+                            <span>Download Deliverable</span>
+                          </button>
+                        ) : isAwaitingPay ? (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => onOpenOrderDetails(ord)}
+                            style={{ display: 'inline-flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.75rem' }}
+                          >
+                            <CreditCard size={13} />
+                            <span>Pay Escrow</span>
+                          </button>
+                        ) : isQuoted ? (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => onOpenOrderDetails(ord)}
+                            style={{ display: 'inline-flex', gap: '0.3rem', alignItems: 'center', fontSize: '0.75rem' }}
+                          >
+                            <Eye size={13} />
+                            <span>Confirm Quote</span>
+                          </button>
+                        ) : (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => onOpenOrderDetails(ord)}
+                            style={{ fontSize: '0.75rem' }}
+                          >
+                            Track Progress
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Featured & Available Services to Order Directly with Search & Category Filter */}
+          <div className="glass-card" style={{ padding: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', color: '#FFFFFF' }}>Order Available Digital Services</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>
+                  Submit instructions, budgets, and deadlines for instant specialist fulfillment.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setActiveMainTab('services')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <span>View Full Catalog ({services.length})</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Filter & Search Bar on Customer Home */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid var(--border-medium)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '0.4rem 0.85rem',
+                  flex: '1 1 240px',
+                }}
+              >
+                <Search size={16} color="var(--primary-400)" style={{ marginRight: '0.5rem' }} />
+                <input
+                  type="text"
+                  placeholder="Quick search digital services..."
+                  value={serviceSearchQuery}
+                  onChange={(e) => setServiceSearchQuery(e.target.value)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                    width: '100%',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+                <button
+                  onClick={() => setSelectedServiceCategory('ALL')}
+                  style={{
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    border: '1px solid var(--border-medium)',
+                    background: selectedServiceCategory === 'ALL' ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.04)',
+                    color: selectedServiceCategory === 'ALL' ? '#FFFFFF' : 'var(--text-sub)',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  All ({services.length})
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedServiceCategory(cat.id)}
+                    style={{
+                      padding: '0.35rem 0.85rem',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      border: '1px solid var(--border-medium)',
+                      background: selectedServiceCategory === cat.id ? 'var(--primary-600)' : 'rgba(255, 255, 255, 0.04)',
+                      color: selectedServiceCategory === cat.id ? '#FFFFFF' : 'var(--text-sub)',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+              {filteredServices.slice(0, 6).map((srv) => (
+                <div
+                  key={srv.id}
+                  style={{
+                    padding: '1.25rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary-300)', background: 'rgba(99, 102, 241, 0.15)', padding: '0.15rem 0.5rem', borderRadius: 'var(--radius-sm)' }}>
+                        {srv.category?.name || 'Service'}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>
+                        ⏱️ ~{srv.turnaroundHours}h
+                      </span>
+                    </div>
+                    <h4 style={{ fontSize: '0.975rem', color: '#FFFFFF', marginBottom: '0.4rem' }}>{srv.title}</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, marginBottom: '1rem' }}>
+                      {srv.shortSummary || srv.description?.slice(0, 85) + '...'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>Pricing:</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: srv.pricingType === 'FIXED' ? 'var(--success)' : 'var(--primary-300)' }}>
+                        {srv.pricingType === 'FIXED' && srv.basePrice > 0 ? `LKR ${srv.basePrice.toLocaleString()}` : 'Custom Quote'}
+                      </span>
+                    </div>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => onOpenNewOrderModal(false, srv)}
+                      style={{ width: '100%', fontSize: '0.8rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      <span>Order Service</span>
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 4-Step Lifecycle Guide: How TaskPulse Works for Customers */}
+          <div className="glass-card" style={{ padding: '1.75rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+              <h3 style={{ fontSize: '1.25rem', color: '#FFFFFF', marginBottom: '0.35rem' }}>
+                How Your Orders Are Fulfilled & Protected
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Step-by-step lifecycle from initial request to verified delivery and free revisions.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1.25rem' }}>
+              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary-400)', marginBottom: '0.4rem' }}>01</div>
+                <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Submit Task & Files</div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                  Enter requirements, target budget, and deadline. Upload reference files directly into the order vault.
+                </p>
+              </div>
+
+              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-cyan)', marginBottom: '0.4rem' }}>02</div>
+                <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Quotation & Escrow</div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                  Review and confirm the upfront quotation. Pay securely via PayHere into platform escrow; money is held safely.
+                </p>
+              </div>
+
+              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#C084FC', marginBottom: '0.4rem' }}>03</div>
+                <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Specialist Work & Admin QC</div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                  Vetted specialist executes the task. Operations admins review deliverables for accuracy before sending to you.
+                </p>
+              </div>
+
+              <div style={{ padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)', marginBottom: '0.4rem' }}>04</div>
+                <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Download & Free Revisions</div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+                  Download deliverables, request up to 2 free revisions within 7 days, and rate completed work.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Customer Protection & Workflow Guarantees */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', marginBottom: '0.5rem' }}>
+                <ShieldCheck size={18} />
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#FFFFFF' }}>Escrow Guarantee</span>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Your payment is locked safely in platform escrow and only released to the specialist after you review and approve the final work.
+              </p>
+            </div>
+
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-300)', marginBottom: '0.5rem' }}>
+                <CheckCircle2 size={18} />
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#FFFFFF' }}>Admin QC Verification</span>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Every deliverable passes internal Quality Control checks before reaching you, guaranteeing accuracy and completeness.
+              </p>
+            </div>
+
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--warning)', marginBottom: '0.5rem' }}>
+                <RefreshCw size={18} />
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#FFFFFF' }}>Free Revisions Policy</span>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Need minor adjustments? You have 2 free revision cycles within 7 days according to our service policy.
+              </p>
+            </div>
+
+            <div className="glass-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-cyan)', marginBottom: '0.5rem' }}>
+                <MessageSquare size={18} />
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#FFFFFF' }}>Direct Admin Support</span>
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Communicate directly with operations regarding quotations, revisions, or cancellation rules at any stage.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick FAQ & Help Accordion for Registered Customer */}
+          <div className="glass-card" style={{ padding: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.15rem', color: '#FFFFFF', marginBottom: '0.75rem' }}>
+              Customer Support & Policy Guidelines
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary-300)', marginBottom: '0.25rem' }}>
+                  💬 How do I chat with Admin about an order?
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Open any order in "My Orders" and click the "Admin Messages & Support" tab to send and receive real-time messages.
+                </p>
+              </div>
+
+              <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary-300)', marginBottom: '0.25rem' }}>
+                  🚫 What are the cancellation rules?
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Orders can be cancelled before specialist assignment for a 100% full refund. Once assigned, contact admin via in-app chat.
+                </p>
+              </div>
+
+              <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary-300)', marginBottom: '0.25rem' }}>
+                  🔄 How do revisions work?
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                  When deliverables are ready, click "Request Revision" on the order. Enter specific adjustment instructions (2 free cycles).
+                </p>
+              </div>
+
+              <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary-300)', marginBottom: '0.25rem' }}>
+                  📁 Where do I download completed files?
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: 0 }}>
+                  Access the "Files Vault" tab in your order modal to download deliverables or upload additional references.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: ORDERS MANAGEMENT (Active vs Previous vs All) */}
       {activeMainTab === 'orders' && (

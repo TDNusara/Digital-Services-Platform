@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Eye,
   EyeOff,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -112,6 +113,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       }}
     >
       <div style={{ width: '100%', maxWidth: '480px' }}>
+        {/* Back to Home Navigation */}
+        <button
+          onClick={() => onNavigate('home')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-sub)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            marginBottom: '1.25rem',
+            padding: 0,
+          }}
+        >
+          <ArrowLeft size={16} />
+          <span>← Back to Home</span>
+        </button>
+
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div

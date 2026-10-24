@@ -5,11 +5,19 @@ import { useAuth } from '../../context/AuthContext';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'login' | 'register_customer' | 'apply_worker';
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTab = 'login' }) => {
   const { login, register, switchDemoAccount } = useAuth();
-  const [tab, setTab] = useState<'login' | 'register_customer' | 'apply_worker'>('login');
+  const [tab, setTab] = useState<'login' | 'register_customer' | 'apply_worker'>(initialTab);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setTab(initialTab);
+      setErrorMsg('');
+    }
+  }, [isOpen, initialTab]);
 
   // Form fields
   const [email, setEmail] = useState('');
