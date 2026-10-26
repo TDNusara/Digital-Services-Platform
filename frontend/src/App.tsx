@@ -88,6 +88,12 @@ const MainApplication: React.FC = () => {
   }, [isAuthenticated, user?.role]);
 
   const handleOpenOrderModal = (customMode: boolean = false, service: any = null) => {
+    // Guest users cannot order services - navigate directly to normal login / registration!
+    if (!isAuthenticated) {
+      setCurrentTab('login');
+      return;
+    }
+
     setIsCustomOrderMode(customMode);
     setPreSelectedService(service);
     setIsNewOrderModalOpen(true);
@@ -339,8 +345,11 @@ const MainApplication: React.FC = () => {
         initialCustomMode={isCustomOrderMode}
         onOrderCreated={handleOrderCreated}
         onOpenAuth={(tab) => {
-          setAuthModalTab(tab || 'login');
-          setIsAuthModalOpen(true);
+          if (tab === 'register_customer') {
+            setCurrentTab('register-customer');
+          } else {
+            setCurrentTab('login');
+          }
         }}
       />
 

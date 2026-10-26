@@ -117,7 +117,7 @@ export const GuestHomePage: React.FC<GuestHomePageProps> = ({
           fontWeight: 600,
         }}
       >
-        ✨ 100% Escrow Protection • Admin Quality Control Gate • 2 Free Revisions within 7 Days • Direct In-App Admin Chat
+        ✨ 100% Escrow Protection • Admin Quality Control Gate • 2 Free Revisions within 7 Days • Sign In or Register to Get Services
       </div>
 
       {/* Hero Section */}
@@ -331,7 +331,7 @@ export const GuestHomePage: React.FC<GuestHomePageProps> = ({
               </div>
               <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Available Services & Upfront Pricing</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '600px' }}>
-                Browse our catalog of professional services with transparent pricing, estimated turnarounds, and instant order options.
+                Browse our catalog of professional services with transparent pricing. Services are provided to registered customers — sign in or register to get any service.
               </p>
             </div>
 
@@ -453,7 +453,7 @@ export const GuestHomePage: React.FC<GuestHomePageProps> = ({
                     onClick={() => openNewOrderModal(false, srv)}
                     style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem', padding: '0.6rem' }}
                   >
-                    <span>Order This Service</span>
+                    <span>Get Service</span>
                     <ArrowRight size={14} />
                   </button>
                 </div>

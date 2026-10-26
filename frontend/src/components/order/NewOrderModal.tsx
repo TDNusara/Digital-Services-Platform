@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileText,
   Info,
+  Lock,
 } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -215,7 +216,7 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isAuthenticated) return null;
 
   const currentService = !isCustomMode ? services.find((s) => s.id === selectedServiceId) : null;
   const isCurrentFixed = currentService?.pricingType === 'FIXED';
@@ -376,54 +377,6 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
             <span>Request Custom Service</span>
           </button>
         </div>
-
-        {!isAuthenticated && (
-          <div
-            style={{
-              padding: '0.85rem 1rem',
-              backgroundColor: 'rgba(99, 102, 241, 0.12)',
-              border: '1px solid rgba(99, 102, 241, 0.35)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.25rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#FFFFFF' }}>
-                Guest Order Notice
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Please sign in or register to submit your request and track deliverables.
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  onClose();
-                  onOpenAuth?.('login');
-                }}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  onClose();
-                  onOpenAuth?.('register_customer');
-                }}
-              >
-                Register
-              </button>
-            </div>
-          </div>
-        )}
 
         {errorMsg && (
           <div
