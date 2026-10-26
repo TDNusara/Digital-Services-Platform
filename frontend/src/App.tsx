@@ -27,12 +27,64 @@ type PageRoute =
   | 'worker-workspace'
   | 'admin-control';
 
+const routeToPath: Record<PageRoute, string> = {
+  'home': '/',
+  'guest-home': '/guest-home',
+  'catalog': '/catalog',
+  'login': '/login',
+  'register-customer': '/register-customer',
+  'register-worker': '/register-worker',
+  'customer-portal': '/customer-portal',
+  'worker-workspace': '/worker-workspace',
+  'admin-control': '/admin-control',
+};
+
+const pathToRoute = (pathname: string): PageRoute => {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  for (const [route, path] of Object.entries(routeToPath)) {
+    if (path === clean) return route as PageRoute;
+  }
+  if (window.location.hash) {
+    const hashClean = window.location.hash.replace(/^#/, '').replace(/\/+$/, '') || '/';
+    for (const [route, path] of Object.entries(routeToPath)) {
+      if (path === hashClean) return route as PageRoute;
+    }
+  }
+  return 'home';
+};
+
 const MainApplication: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
-  // Navigation State - Defaults to home (renders Guest Home for guests, Customer Home for registered customers)
-  const [currentTab, setCurrentTab] = useState<PageRoute>('home');
+  // Navigation State with browser history sync
+  const [currentTab, setCurrentTab] = useState<PageRoute>(() => pathToRoute(window.location.pathname));
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const navigateTo = (tab: PageRoute, replace: boolean = false) => {
+    setCurrentTab(tab);
+    const targetPath = routeToPath[tab] || '/';
+    if (window.location.pathname !== targetPath) {
+      if (replace) {
+        window.history.replaceState({ tab }, '', targetPath);
+      } else {
+        window.history.pushState({ tab }, '', targetPath);
+      }
+    }
+  };
+
+  // Sync with browser back / forward buttons
+  useEffect(() => {
+    const initialTab = pathToRoute(window.location.pathname);
+    window.history.replaceState({ tab: initialTab }, '', routeToPath[initialTab] || '/');
+
+    const handlePopState = (e: PopStateEvent) => {
+      const tab = e.state?.tab || pathToRoute(window.location.pathname);
+      setCurrentTab(tab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Data State
   const [categories, setCategories] = useState<any[]>([]);
@@ -90,7 +142,7 @@ const MainApplication: React.FC = () => {
   const handleOpenOrderModal = (customMode: boolean = false, service: any = null) => {
     // Guest users cannot order services - navigate directly to normal login / registration!
     if (!isAuthenticated) {
-      setCurrentTab('login');
+      navigateTo('login');
       return;
     }
 
@@ -101,7 +153,7 @@ const MainApplication: React.FC = () => {
 
   const handleOrderCreated = (newOrder: any) => {
     setOrders((prev) => [newOrder, ...prev]);
-    setCurrentTab('customer-portal');
+    navigateTo('customer-portal');
   };
 
   const handleOrderUpdated = async () => {
@@ -124,11 +176,11 @@ const MainApplication: React.FC = () => {
   // Redirect on successful authentication
   useEffect(() => {
     if (isAuthenticated && user?.role === 'CUSTOMER' && ['login', 'register-customer'].includes(currentTab)) {
-      setCurrentTab('customer-portal');
+      navigateTo('customer-portal', true);
     } else if (isAuthenticated && user?.role === 'WORKER' && ['login', 'register-worker'].includes(currentTab)) {
-      setCurrentTab('worker-workspace');
+      navigateTo('worker-workspace', true);
     } else if (isAuthenticated && user?.role === 'ADMIN' && currentTab === 'login') {
-      setCurrentTab('admin-control');
+      navigateTo('admin-control', true);
     }
   }, [isAuthenticated, user?.role, currentTab]);
 
@@ -153,11 +205,11 @@ const MainApplication: React.FC = () => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <PublicNavbar
             currentTab={currentTab}
-            setCurrentTab={(tab) => setCurrentTab(tab as PageRoute)}
+            setCurrentTab={(tab) => navigateTo(tab as PageRoute)}
             openNewOrderModal={() => handleOpenOrderModal(false, null)}
           />
           <main style={{ flex: 1 }}>
-            <LoginPage onNavigate={(page) => setCurrentTab(page as PageRoute)} />
+            <LoginPage onNavigate={(page) => navigateTo(page as PageRoute)} />
           </main>
         </div>
       )}
@@ -166,11 +218,11 @@ const MainApplication: React.FC = () => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <PublicNavbar
             currentTab={currentTab}
-            setCurrentTab={(tab) => setCurrentTab(tab as PageRoute)}
+            setCurrentTab={(tab) => navigateTo(tab as PageRoute)}
             openNewOrderModal={() => handleOpenOrderModal(false, null)}
           />
           <main style={{ flex: 1 }}>
-            <CustomerRegisterPage onNavigate={(page) => setCurrentTab(page as PageRoute)} />
+            <CustomerRegisterPage onNavigate={(page) => navigateTo(page as PageRoute)} />
           </main>
         </div>
       )}
@@ -179,11 +231,11 @@ const MainApplication: React.FC = () => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <PublicNavbar
             currentTab={currentTab}
-            setCurrentTab={(tab) => setCurrentTab(tab as PageRoute)}
+            setCurrentTab={(tab) => navigateTo(tab as PageRoute)}
             openNewOrderModal={() => handleOpenOrderModal(false, null)}
           />
           <main style={{ flex: 1 }}>
-            <WorkerRegisterPage onNavigate={(page) => setCurrentTab(page as PageRoute)} categories={categories} />
+            <WorkerRegisterPage onNavigate={(page) => navigateTo(page as PageRoute)} categories={categories} />
           </main>
         </div>
       )}
@@ -213,9 +265,9 @@ const MainApplication: React.FC = () => {
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => {
-                  if (user?.role === 'ADMIN') setCurrentTab('admin-control');
-                  else if (user?.role === 'WORKER') setCurrentTab('worker-workspace');
-                  else setCurrentTab('customer-portal');
+                  if (user?.role === 'ADMIN') navigateTo('admin-control');
+                  else if (user?.role === 'WORKER') navigateTo('worker-workspace');
+                  else navigateTo('customer-portal');
                 }}
                 style={{ fontSize: '0.78rem' }}
               >
@@ -226,7 +278,7 @@ const MainApplication: React.FC = () => {
 
           <PublicNavbar
             currentTab={currentTab}
-            setCurrentTab={(tab) => setCurrentTab(tab as PageRoute)}
+            setCurrentTab={(tab) => navigateTo(tab as PageRoute)}
             openNewOrderModal={() => handleOpenOrderModal(false, null)}
           />
 
@@ -236,7 +288,7 @@ const MainApplication: React.FC = () => {
               services={services}
               onSelectCategory={(slug) => setSelectedCategory(slug)}
               openNewOrderModal={(customMode, service) => handleOpenOrderModal(Boolean(customMode), service || null)}
-              onNavigate={(tab) => setCurrentTab(tab as PageRoute)}
+              onNavigate={(tab) => navigateTo(tab as PageRoute)}
             />
           </main>
         </div>
@@ -248,10 +300,10 @@ const MainApplication: React.FC = () => {
           role="CUSTOMER"
           activeSubTab={currentTab === 'catalog' ? 'services' : customerSubTab}
           onSelectSubTab={(tab) => {
-            if (currentTab !== 'customer-portal') setCurrentTab('customer-portal');
+            if (currentTab !== 'customer-portal') navigateTo('customer-portal');
             setCustomerSubTab(tab as any);
           }}
-          onNavigate={(route) => setCurrentTab(route as PageRoute)}
+          onNavigate={(route) => navigateTo(route as PageRoute)}
           openNewOrderModal={() => handleOpenOrderModal(false, null)}
           orders={orders}
         >
@@ -273,7 +325,7 @@ const MainApplication: React.FC = () => {
           role="WORKER"
           activeSubTab={workerSubTab}
           onSelectSubTab={setWorkerSubTab}
-          onNavigate={(route) => setCurrentTab(route as PageRoute)}
+          onNavigate={(route) => navigateTo(route as PageRoute)}
           openNewOrderModal={() => handleOpenOrderModal(false, null)}
           orders={orders}
         >
@@ -284,7 +336,7 @@ const MainApplication: React.FC = () => {
                 <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
                   Please sign in to your specialist account to accept tasks and upload deliverables for QC review.
                 </p>
-                <button className="btn btn-primary" onClick={() => setCurrentTab('login')}>
+                <button className="btn btn-primary" onClick={() => navigateTo('login')}>
                   Sign In as Specialist
                 </button>
               </div>
@@ -305,7 +357,7 @@ const MainApplication: React.FC = () => {
           role="ADMIN"
           activeSubTab={adminSubTab}
           onSelectSubTab={(tab) => setAdminSubTab(tab as any)}
-          onNavigate={(route) => setCurrentTab(route as PageRoute)}
+          onNavigate={(route) => navigateTo(route as PageRoute)}
           openNewOrderModal={() => handleOpenOrderModal(false, null)}
           orders={orders}
         >
@@ -316,7 +368,7 @@ const MainApplication: React.FC = () => {
                 <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
                   This section is restricted to operations administrators.
                 </p>
-                <button className="btn btn-primary" onClick={() => setCurrentTab('login')}>
+                <button className="btn btn-primary" onClick={() => navigateTo('login')}>
                   Sign In as Administrator
                 </button>
               </div>
@@ -346,9 +398,9 @@ const MainApplication: React.FC = () => {
         onOrderCreated={handleOrderCreated}
         onOpenAuth={(tab) => {
           if (tab === 'register_customer') {
-            setCurrentTab('register-customer');
+            navigateTo('register-customer');
           } else {
-            setCurrentTab('login');
+            navigateTo('login');
           }
         }}
       />
