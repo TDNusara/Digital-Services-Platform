@@ -288,18 +288,15 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem' }}>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <button
-                  onClick={() => {
-                    onSelectSubTab('home');
-                    if (role !== 'CUSTOMER') onNavigate('customer-portal');
-                  }}
+                  onClick={() => onNavigate('guest-home')}
                   className="btn btn-secondary btn-sm"
-                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
-                  title="Customer Home"
+                  style={{ flex: 1, fontSize: '0.75rem', padding: '0.35rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', color: 'var(--text-sub)' }}
+                  title="Home"
                 >
-                  <Home size={12} />
-                  <span>Customer Home</span>
+                  <Globe size={13} />
+                  <span>Home</span>
                 </button>
                 <button
                   onClick={() => {
@@ -313,33 +310,13 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
                   <LogOut size={14} color="var(--danger)" />
                 </button>
               </div>
-
-              <button
-                onClick={() => onNavigate('guest-home')}
-                className="btn btn-secondary btn-sm"
-                style={{ width: '100%', fontSize: '0.72rem', padding: '0.3rem 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', color: 'var(--text-sub)' }}
-                title="View Guest / Public Home Page"
-              >
-                <Globe size={12} />
-                <span>Guest Home Page</span>
-              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
               <button
-                onClick={() => {
-                  onSelectSubTab('home');
-                  if (role !== 'CUSTOMER') onNavigate('customer-portal');
-                }}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-sub)', cursor: 'pointer' }}
-                title="Customer Home"
-              >
-                <Home size={16} />
-              </button>
-              <button
                 onClick={() => onNavigate('guest-home')}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-sub)', cursor: 'pointer' }}
-                title="View Guest Home Page"
+                title="Home"
               >
                 <Globe size={16} />
               </button>
