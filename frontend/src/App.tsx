@@ -171,7 +171,7 @@ const MainApplication: React.FC = () => {
   // Sub-tabs for Independent Role Sidebars
   const [customerSubTab, setCustomerSubTab] = useState<'home' | 'orders' | 'services' | 'transactions' | 'notifications' | 'profile'>('home');
   const [workerSubTab, setWorkerSubTab] = useState<string>('workspace');
-  const [adminSubTab, setAdminSubTab] = useState<'orders' | 'services' | 'workers'>('orders');
+  const [adminSubTab, setAdminSubTab] = useState<'orders' | 'services' | 'workers' | 'escrow'>('orders');
 
   // Redirect on successful authentication
   useEffect(() => {

@@ -264,3 +264,344 @@ export const updateWorkerVerification = async (req: AuthenticatedRequest, res: R
     res.status(500).json({ error: 'Failed to update worker status.' });
   }
 };
+
+/**
+ * Escrow & Financial Overview for Administrator
+ */
+export const getEscrowOverview = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        quotedPrice: { not: null },
+      },
+      include: {
+        customer: { select: { id: true, fullName: true, email: true, phone: true } },
+        service: { select: { id: true, title: true } },
+        category: { select: { id: true, name: true } },
+        assignments: {
+          where: { status: 'ACCEPTED' },
+          include: { worker: { select: { id: true, fullName: true, email: true } } },
+          take: 1,
+        },
+        payments: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const activeStatuses = [
+      'READY_FOR_ASSIGNMENT',
+      'AWAITING_WORKER_ACCEPTANCE',
+      'IN_PROGRESS',
+      'SUBMITTED_FOR_QC',
+      'READY_FOR_CUSTOMER',
+      'REVISION_REQUESTED',
+    ];
+
+    let totalEscrowLocked = 0;
+    let totalEscrowReleased = 0;
+    let totalPlatformRevenue = 0;
+    let totalEscrowRefunded = 0;
+
+    orders.forEach((o) => {
+      const hasCompletedPayment = o.payments?.some((p) => p.status === 'COMPLETED');
+      const hasRefundedPayment = o.payments?.some((p) => p.status === 'REFUNDED');
+
+      if (hasCompletedPayment && activeStatuses.includes(o.status)) {
+        totalEscrowLocked += o.quotedPrice || 0;
+      }
+      if (o.status === 'COMPLETED') {
+        totalEscrowReleased += o.workerPayout || 0;
+        totalPlatformRevenue += o.platformFee || 0;
+      }
+      if (hasRefundedPayment || (o.status === 'CANCELLED' && hasCompletedPayment)) {
+        totalEscrowRefunded += o.quotedPrice || 0;
+      }
+    });
+
+    res.json({
+      summary: {
+        totalEscrowLocked,
+        totalEscrowReleased,
+        totalPlatformRevenue,
+        totalEscrowRefunded,
+        totalOrdersCount: orders.length,
+      },
+      orders,
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to fetch escrow financial overview: ' + error.message });
+  }
+};
+
+/**
+ * Update Order Pricing & Escrow Breakdown by Administrator
+ */
+export const updateOrderPricingBreakdown = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { orderId } = req.params;
+    const {
+      quotedPrice,
+      platformCommissionRate,
+      platformFee,
+      workerPayout,
+      quotationNotes,
+      turnaroundHours,
+      adminReason = 'Pricing breakdown adjusted by administrator',
+    } = req.body;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { customer: true },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const price = quotedPrice !== undefined ? parseFloat(quotedPrice) : order.quotedPrice || 0;
+    const commRate = platformCommissionRate !== undefined ? parseFloat(platformCommissionRate) : (order.platformCommissionRate || 0.20);
+    const fee = platformFee !== undefined ? parseFloat(platformFee) : (price * commRate);
+    const payout = workerPayout !== undefined ? parseFloat(workerPayout) : (price - fee);
+
+    const deadline = turnaroundHours
+      ? new Date(Date.now() + parseInt(turnaroundHours) * 3600 * 1000)
+      : order.targetDeadline;
+
+    const updated = await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        quotedPrice: price,
+        platformCommissionRate: commRate,
+        platformFee: fee,
+        workerPayout: payout,
+        quotationNotes: quotationNotes !== undefined ? quotationNotes : order.quotationNotes,
+        targetDeadline: deadline,
+        statusHistory: {
+          create: {
+            fromStatus: order.status,
+            toStatus: order.status,
+            changedById: req.user!.userId,
+            notes: `Pricing Breakdown Updated: Total LKR ${price.toLocaleString()}, Commission LKR ${fee.toLocaleString()} (${(commRate * 100).toFixed(0)}%), Specialist Payout LKR ${payout.toLocaleString()}. Note: ${adminReason}`,
+          },
+        },
+      },
+      include: {
+        customer: { select: { id: true, fullName: true, email: true } },
+        payments: true,
+      },
+    });
+
+    // Notify customer
+    await prisma.notification.create({
+      data: {
+        userId: order.customerId,
+        title: `Pricing Breakdown Updated: ${order.orderNumber}`,
+        message: `Administrator updated pricing terms for your order: Total LKR ${price.toLocaleString()}.`,
+        link: `/customer/orders/${order.id}`,
+      },
+    });
+
+    res.json({ message: 'Pricing breakdown updated successfully.', order: updated });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to update pricing breakdown: ' + error.message });
+  }
+};
+
+/**
+ * Manual Escrow Release by Administrator to Specialist
+ */
+export const releaseEscrow = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { orderId } = req.params;
+    const adminId = req.user!.userId;
+    const { notes = 'Escrow released manually by Administrator approval' } = req.body;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        assignments: { where: { status: 'ACCEPTED' }, take: 1 },
+        payments: true,
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    if (order.status === 'COMPLETED') {
+      res.status(400).json({ error: 'Order is already marked as completed and escrow cleared.' });
+      return;
+    }
+
+    const assignedWorkerId = order.assignments[0]?.workerId;
+    if (!assignedWorkerId) {
+      res.status(400).json({ error: 'Cannot release escrow: No specialist is currently assigned to this order.' });
+      return;
+    }
+
+    const workerProfile = await prisma.workerProfile.findUnique({
+      where: { userId: assignedWorkerId },
+      include: { wallet: true },
+    });
+
+    if (!workerProfile) {
+      res.status(404).json({ error: 'Specialist profile not found.' });
+      return;
+    }
+
+    const payoutAmount = order.workerPayout || ((order.quotedPrice || 0) * 0.8);
+
+    await prisma.$transaction([
+      ...(workerProfile.wallet
+        ? [
+            prisma.workerWallet.update({
+              where: { id: workerProfile.wallet.id },
+              data: { currentBalance: { increment: payoutAmount } },
+            }),
+            prisma.walletTransaction.create({
+              data: {
+                walletId: workerProfile.wallet.id,
+                orderId: order.id,
+                type: 'EARNING',
+                amount: payoutAmount,
+                description: `Admin Escrow Release: Payment cleared for order ${order.orderNumber}`,
+              },
+            }),
+          ]
+        : [
+            prisma.workerWallet.create({
+              data: {
+                workerProfileId: workerProfile.id,
+                currentBalance: payoutAmount,
+                transactions: {
+                  create: {
+                    orderId: order.id,
+                    type: 'EARNING',
+                    amount: payoutAmount,
+                    description: `Admin Escrow Release: Payment cleared for order ${order.orderNumber}`,
+                  },
+                },
+              },
+            }),
+          ]),
+      prisma.workerProfile.update({
+        where: { id: workerProfile.id },
+        data: { totalCompletedJobs: { increment: 1 } },
+      }),
+      prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'COMPLETED',
+          statusHistory: {
+            create: {
+              fromStatus: order.status,
+              toStatus: 'COMPLETED',
+              changedById: adminId,
+              notes: `Admin manually released Escrow (LKR ${payoutAmount.toLocaleString()}) to specialist. ${notes}`,
+            },
+          },
+        },
+      }),
+      prisma.notification.create({
+        data: {
+          userId: assignedWorkerId,
+          title: `Escrow Released: LKR ${payoutAmount.toLocaleString()}`,
+          message: `Administrator has released escrow payment for order ${order.orderNumber} to your wallet.`,
+          link: `/worker/wallet`,
+        },
+      }),
+      prisma.notification.create({
+        data: {
+          userId: order.customerId,
+          title: `Order Completed & Escrow Cleared: ${order.orderNumber}`,
+          message: `Your order has been officially completed and finalized by administration.`,
+          link: `/customer/orders/${order.id}`,
+        },
+      }),
+    ]);
+
+    res.json({ message: `Escrow of LKR ${payoutAmount.toLocaleString()} successfully released to specialist.` });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to release escrow: ' + error.message });
+  }
+};
+
+/**
+ * Escrow Refund by Administrator to Customer
+ */
+export const refundEscrow = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { orderId } = req.params;
+    const adminId = req.user!.userId;
+    const { refundAmount, reason = 'Escrow refunded to customer by Administrator' } = req.body;
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        payments: { where: { status: 'COMPLETED' }, take: 1, orderBy: { createdAt: 'desc' } },
+        assignments: { where: { status: 'ACCEPTED' }, take: 1 },
+      },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const latestPayment = order.payments[0];
+    const amount = refundAmount ? parseFloat(refundAmount) : (latestPayment?.amount || order.quotedPrice || 0);
+
+    await prisma.$transaction([
+      ...(latestPayment
+        ? [
+            prisma.payment.update({
+              where: { id: latestPayment.id },
+              data: { status: 'REFUNDED' },
+            }),
+          ]
+        : []),
+      prisma.order.update({
+        where: { id: orderId },
+        data: {
+          status: 'CANCELLED',
+          cancellationReason: reason,
+          statusHistory: {
+            create: {
+              fromStatus: order.status,
+              toStatus: 'CANCELLED',
+              changedById: adminId,
+              notes: `Escrow refunded to customer: LKR ${amount.toLocaleString()}. Reason: ${reason}`,
+            },
+          },
+        },
+      }),
+      prisma.notification.create({
+        data: {
+          userId: order.customerId,
+          title: `Escrow Refund Processed: ${order.orderNumber}`,
+          message: `Administrator has processed a refund of LKR ${amount.toLocaleString()} for order "${order.title}". Reason: ${reason}`,
+          link: `/customer/orders/${order.id}`,
+        },
+      }),
+      ...(order.assignments[0]
+        ? [
+            prisma.notification.create({
+              data: {
+                userId: order.assignments[0].workerId,
+                title: `Order Cancelled & Refunded: ${order.orderNumber}`,
+                message: `Order "${order.title}" has been cancelled and refunded by administration.`,
+                link: `/worker/tasks/${order.id}`,
+              },
+            }),
+          ]
+        : []),
+    ]);
+
+    res.json({ message: `Escrow payment of LKR ${amount.toLocaleString()} refunded to customer.` });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to process escrow refund: ' + error.message });
+  }
+};
+

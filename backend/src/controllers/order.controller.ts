@@ -265,7 +265,14 @@ export const getOrderById = async (req: AuthenticatedRequest, res: Response): Pr
 export const sendQuotation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { quotedPrice, quotationNotes, turnaroundHours } = req.body;
+    const {
+      quotedPrice,
+      quotationNotes,
+      turnaroundHours,
+      commissionRate,
+      platformFee: customPlatformFee,
+      workerPayout: customWorkerPayout,
+    } = req.body;
 
     if (!quotedPrice || quotedPrice <= 0) {
       res.status(400).json({ error: 'A valid quoted price is required.' });
@@ -273,8 +280,9 @@ export const sendQuotation = async (req: AuthenticatedRequest, res: Response): P
     }
 
     const price = parseFloat(quotedPrice);
-    const platformFee = price * config.commissionRate;
-    const workerPayout = price - platformFee;
+    const commRate = commissionRate !== undefined ? parseFloat(commissionRate) : config.commissionRate;
+    const platformFee = customPlatformFee !== undefined ? parseFloat(customPlatformFee) : (price * commRate);
+    const workerPayout = customWorkerPayout !== undefined ? parseFloat(customWorkerPayout) : (price - platformFee);
 
     const deadline = turnaroundHours
       ? new Date(Date.now() + parseInt(turnaroundHours) * 3600 * 1000)
@@ -284,6 +292,7 @@ export const sendQuotation = async (req: AuthenticatedRequest, res: Response): P
       where: { id },
       data: {
         quotedPrice: price,
+        platformCommissionRate: commRate,
         platformFee,
         workerPayout,
         quotationNotes,
@@ -294,7 +303,7 @@ export const sendQuotation = async (req: AuthenticatedRequest, res: Response): P
             fromStatus: 'PENDING_REVIEW',
             toStatus: 'QUOTATION_SENT',
             changedById: req.user!.userId,
-            notes: `Quotation sent: LKR ${price.toFixed(2)}. ${quotationNotes || ''}`,
+            notes: `Quotation sent: LKR ${price.toFixed(2)} (Platform Commission: LKR ${platformFee.toFixed(2)}, Specialist Payout: LKR ${workerPayout.toFixed(2)}). ${quotationNotes || ''}`,
           },
         },
       },

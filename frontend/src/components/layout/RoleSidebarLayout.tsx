@@ -105,6 +105,7 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
     { id: 'orders', label: 'Order Operations', icon: FileText, badge: orders.length > 0 ? orders.length : undefined },
     { id: 'services', label: 'Services Manager', icon: Settings },
     { id: 'workers', label: 'Specialists & QC', icon: Users },
+    { id: 'escrow', label: 'Escrow & Financials', icon: DollarSign },
   ];
 
   const currentNavItems = role === 'CUSTOMER' ? customerNavItems : role === 'WORKER' ? workerNavItems : adminNavItems;
