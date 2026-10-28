@@ -29,6 +29,7 @@ import {
   Globe,
 } from 'lucide-react';
 import api from '../../api/client';
+import { CustomerFooter } from './CustomerFooter';
 
 interface RoleSidebarLayoutProps {
   role: 'CUSTOMER' | 'WORKER' | 'ADMIN';
@@ -530,6 +531,16 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
         <main style={{ flex: 1 }}>
           {children}
         </main>
+
+        {/* Footer for Customer Pages */}
+        {role === 'CUSTOMER' && (
+          <CustomerFooter
+            activeSubTab={activeSubTab}
+            onSelectSubTab={onSelectSubTab}
+            onNavigate={onNavigate}
+            openNewOrderModal={openNewOrderModal}
+          />
+        )}
       </div>
     </div>
   );

@@ -28,6 +28,7 @@ import {
   RefreshCw,
   CreditCard,
 } from 'lucide-react';
+import { CustomerFooter } from '../../components/layout/CustomerFooter';
 
 interface GuestHomePageProps {
   categories: any[];
@@ -791,40 +792,11 @@ export const GuestHomePage: React.FC<GuestHomePageProps> = ({
         </div>
       </section>
 
-      {/* Footer */}
-      <footer
-        style={{
-          borderTop: '1px solid var(--border-subtle)',
-          padding: '3rem 0',
-          backgroundColor: 'rgba(11, 15, 25, 0.95)',
-        }}
-      >
-        <div
-          className="container"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '1.5rem',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '0.25rem' }}>
-              Task<span style={{ color: 'var(--primary-400)' }}>Pulse</span>
-            </div>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-sub)', margin: 0 }}>
-              © 2026 TaskPulse Digital Services Platform. All rights reserved.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.85rem' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Academic Integrity Policy</span>
-            <span style={{ color: 'var(--text-muted)' }}>Escrow & Refund Terms</span>
-            <span style={{ color: 'var(--text-muted)' }}>PayHere Sandbox Ready</span>
-          </div>
-        </div>
-      </footer>
+      {/* Customer Footer */}
+      <CustomerFooter
+        onNavigate={onNavigate}
+        openNewOrderModal={(customMode, service) => openNewOrderModal(Boolean(customMode), service || null)}
+      />
     </div>
   );
 };
