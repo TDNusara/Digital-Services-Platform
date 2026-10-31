@@ -9,7 +9,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTab = 'login' }) => {
-  const { login, register, switchDemoAccount } = useAuth();
+  const { login, register } = useAuth();
   const [tab, setTab] = useState<'login' | 'register_customer' | 'apply_worker'>(initialTab);
 
   React.useEffect(() => {
@@ -163,55 +163,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
             Join as Worker
           </button>
         </div>
-
-        {/* Quick Demo Logins Ribbon */}
-        {tab === 'login' && (
-          <div
-            style={{
-              padding: '0.75rem',
-              backgroundColor: 'rgba(99, 102, 241, 0.08)',
-              border: '1px solid rgba(99, 102, 241, 0.25)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.25rem',
-            }}
-          >
-            <div style={{ fontSize: '0.75rem', color: 'var(--primary-300)', fontWeight: 600, marginBottom: '0.5rem' }}>
-              ⚡ 1-Click Instant Demo Credentials:
-            </div>
-            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  switchDemoAccount('CUSTOMER');
-                  onClose();
-                }}
-              >
-                Sarah (Customer)
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  switchDemoAccount('WORKER');
-                  onClose();
-                }}
-              >
-                Kamal (Worker)
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  switchDemoAccount('ADMIN');
-                  onClose();
-                }}
-              >
-                Operations (Admin)
-              </button>
-            </div>
-          </div>
-        )}
 
         {errorMsg && (
           <div

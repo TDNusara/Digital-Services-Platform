@@ -2,16 +2,13 @@ import React, { useState } from 'react';
 import {
   Lock,
   Mail,
-  User,
-  ShieldCheck,
-  Briefcase,
-  Sparkles,
   ArrowRight,
   AlertCircle,
-  CheckCircle,
   Eye,
   EyeOff,
   ArrowLeft,
+  ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,57 +19,15 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onNavigate,
-  initialRole = 'CUSTOMER',
 }) => {
   const { login } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<'CUSTOMER' | 'WORKER' | 'ADMIN'>(initialRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const roleConfigs = {
-    CUSTOMER: {
-      title: 'Customer Login',
-      subtitle: 'Access your orders, review quotations, make escrow payments, and download quality-checked deliverables.',
-      demoEmail: 'customer@example.com',
-      demoPass: 'Customer@12345',
-      badgeColor: 'var(--primary-400)',
-      icon: User,
-    },
-    WORKER: {
-      title: 'Specialist & Freelancer Login',
-      subtitle: 'Access your task offers, submit completed drafts for Admin QC, and track your wallet earnings.',
-      demoEmail: 'worker@example.com',
-      demoPass: 'Worker@12345',
-      badgeColor: '#38BDF8',
-      icon: Briefcase,
-    },
-    ADMIN: {
-      title: 'Administrator Control Login',
-      subtitle: 'Manage client quotations, approve deliverables via quality-check, assign specialists, and oversee platform revenue.',
-      demoEmail: 'admin@taskpulse.lk',
-      demoPass: 'Admin@12345',
-      badgeColor: 'var(--warning)',
-      icon: ShieldCheck,
-    },
-  };
-
-  const currentConfig = roleConfigs[selectedRole];
-  const Icon = currentConfig.icon;
-
-  const handleRoleTabClick = (role: 'CUSTOMER' | 'WORKER' | 'ADMIN') => {
-    setSelectedRole(role);
-    setErrorMessage('');
-  };
-
-  const handleFillDemo = (role: 'CUSTOMER' | 'WORKER' | 'ADMIN') => {
-    setSelectedRole(role);
-    setEmail(roleConfigs[role].demoEmail);
-    setPassword(roleConfigs[role].demoPass);
-    setErrorMessage('');
-  };
+  const [forgotMsg, setForgotMsg] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +41,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setIsLoading(true);
     try {
       const loggedUser = await login(email.trim(), password);
-      // Route user to their independent role portal
+      // Route user automatically to their dedicated role workspace
       if (loggedUser.role === 'ADMIN') {
         onNavigate('admin-control');
       } else if (loggedUser.role === 'WORKER') {
@@ -95,7 +50,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         onNavigate('customer-portal');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+      setErrorMessage(err.message || 'Invalid email or password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -109,10 +64,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '80vh',
+        minHeight: '82vh',
       }}
     >
-      <div style={{ width: '100%', maxWidth: '480px' }}>
+      <div style={{ width: '100%', maxWidth: '440px' }}>
         {/* Back to Home Navigation */}
         <button
           onClick={() => onNavigate('home')}
@@ -122,173 +77,169 @@ export const LoginPage: React.FC<LoginPageProps> = ({
             color: 'var(--text-sub)',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.4rem',
+            gap: '0.45rem',
             cursor: 'pointer',
             fontSize: '0.85rem',
-            marginBottom: '1.25rem',
+            marginBottom: '1.5rem',
             padding: 0,
+            transition: 'color var(--transition-fast)',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-main)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-sub)')}
         >
           <ArrowLeft size={16} />
-          <span>← Back to Home</span>
+          <span>Back to Home</span>
         </button>
 
-        {/* Header */}
+        {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div
             style={{
-              width: '3.2rem',
-              height: '3.2rem',
-              borderRadius: 'var(--radius-md)',
+              width: '3.4rem',
+              height: '3.4rem',
+              borderRadius: 'var(--radius-lg)',
               background: 'linear-gradient(135deg, var(--primary-600), #8B5CF6)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 1rem auto',
+              margin: '0 auto 1.25rem auto',
               boxShadow: 'var(--shadow-glow)',
             }}
           >
-            <Icon size={26} color="#FFFFFF" />
+            <Lock size={24} color="#FFFFFF" />
           </div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.4rem' }}>{currentConfig.title}</h1>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.45rem', color: '#FFFFFF' }}>
+            Welcome Back
+          </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>
-            {currentConfig.subtitle}
+            Sign in to access your digital workspace, track orders, and manage deliverables.
           </p>
         </div>
 
-        {/* Role Selector Tabs */}
+        {/* Login Card */}
         <div
+          className="glass-card"
           style={{
-            display: 'flex',
-            backgroundColor: 'rgba(255, 255, 255, 0.04)',
-            borderRadius: 'var(--radius-md)',
-            padding: '0.3rem',
-            marginBottom: '1.5rem',
-            border: '1px solid var(--border-subtle)',
+            padding: '2.25rem',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-default)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.35)',
           }}
         >
-          <button
-            type="button"
-            onClick={() => handleRoleTabClick('CUSTOMER')}
-            style={{
-              flex: 1,
-              padding: '0.55rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.825rem',
-              backgroundColor: selectedRole === 'CUSTOMER' ? 'var(--primary-600)' : 'transparent',
-              color: selectedRole === 'CUSTOMER' ? '#FFFFFF' : 'var(--text-muted)',
-              transition: 'all var(--transition-fast)',
-            }}
-          >
-            Customer
-          </button>
-          <button
-            type="button"
-            onClick={() => handleRoleTabClick('WORKER')}
-            style={{
-              flex: 1,
-              padding: '0.55rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.825rem',
-              backgroundColor: selectedRole === 'WORKER' ? 'var(--primary-600)' : 'transparent',
-              color: selectedRole === 'WORKER' ? '#FFFFFF' : 'var(--text-muted)',
-              transition: 'all var(--transition-fast)',
-            }}
-          >
-            Specialist
-          </button>
-          <button
-            type="button"
-            onClick={() => handleRoleTabClick('ADMIN')}
-            style={{
-              flex: 1,
-              padding: '0.55rem',
-              borderRadius: 'var(--radius-sm)',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.825rem',
-              backgroundColor: selectedRole === 'ADMIN' ? 'var(--primary-600)' : 'transparent',
-              color: selectedRole === 'ADMIN' ? '#FFFFFF' : 'var(--text-muted)',
-              transition: 'all var(--transition-fast)',
-            }}
-          >
-            Admin
-          </button>
-        </div>
-
-        {/* Form Card */}
-        <div className="glass-card" style={{ padding: '2rem' }}>
           {errorMessage && (
             <div
               style={{
-                padding: '0.75rem 1rem',
-                backgroundColor: 'var(--danger-bg)',
-                border: '1px solid var(--danger-border)',
+                padding: '0.85rem 1rem',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
                 borderRadius: 'var(--radius-md)',
-                color: 'var(--danger)',
+                color: '#FCA5A5',
                 fontSize: '0.85rem',
-                marginBottom: '1.25rem',
+                marginBottom: '1.5rem',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
+                alignItems: 'flex-start',
+                gap: '0.65rem',
+                lineHeight: 1.4,
               }}
             >
-              <AlertCircle size={16} />
+              <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
               <span>{errorMessage}</span>
             </div>
           )}
 
+          {forgotMsg && (
+            <div
+              style={{
+                padding: '0.85rem 1rem',
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                borderRadius: 'var(--radius-md)',
+                color: '#C7D2FE',
+                fontSize: '0.85rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.65rem',
+                lineHeight: 1.4,
+              }}
+            >
+              <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--primary-400)' }} />
+              <span>To reset your password, please contact support at <strong>support@taskpulse.lk</strong> with your registered email.</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.45rem' }}>
                 <span>Email Address</span>
-                <span className="required">*</span>
+                <span className="required" style={{ color: 'var(--danger)', marginLeft: '0.2rem' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
                 <Mail
                   size={16}
                   color="var(--text-sub)"
-                  style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
+                  style={{ position: 'absolute', left: '0.95rem', top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <input
                   type="email"
                   className="form-input"
-                  placeholder="name@example.com"
+                  placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={{ paddingLeft: '2.5rem' }}
+                  style={{
+                    paddingLeft: '2.6rem',
+                    height: '2.85rem',
+                    fontSize: '0.9rem',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                  autoComplete="email"
                   required
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-label" style={{ marginBottom: '0.35rem' }}>
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+                <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
                   <span>Password</span>
-                  <span className="required">*</span>
+                  <span className="required" style={{ color: 'var(--danger)', marginLeft: '0.2rem' }}>*</span>
                 </label>
+                <button
+                  type="button"
+                  onClick={() => setForgotMsg(!forgotMsg)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary-400)',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    padding: 0,
+                  }}
+                >
+                  Forgot password?
+                </button>
               </div>
               <div style={{ position: 'relative' }}>
                 <Lock
                   size={16}
                   color="var(--text-sub)"
-                  style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
+                  style={{ position: 'absolute', left: '0.95rem', top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   className="form-input"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                  style={{
+                    paddingLeft: '2.6rem',
+                    paddingRight: '2.75rem',
+                    height: '2.85rem',
+                    fontSize: '0.9rem',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                  autoComplete="current-password"
                   required
                 />
                 <button
@@ -296,7 +247,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   onClick={() => setShowPassword(!showPassword)}
                   style={{
                     position: 'absolute',
-                    right: '0.75rem',
+                    right: '0.85rem',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: 'none',
@@ -305,11 +256,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
+                    padding: '0.2rem',
                   }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.825rem', color: 'var(--text-muted)' }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{ accentColor: 'var(--primary-600)', cursor: 'pointer' }}
+                />
+                <span>Remember me on this device</span>
+              </label>
             </div>
 
             <button
@@ -321,92 +287,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 padding: '0.85rem',
                 fontWeight: 700,
                 fontSize: '0.95rem',
-                marginTop: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                borderRadius: 'var(--radius-md)',
               }}
             >
-              <span>{isLoading ? 'Signing In...' : `Sign In as ${selectedRole === 'CUSTOMER' ? 'Customer' : selectedRole === 'WORKER' ? 'Specialist' : 'Admin'}`}</span>
-              <ArrowRight size={16} />
+              <span>{isLoading ? 'Signing In...' : 'Sign In'}</span>
+              {!isLoading && <ArrowRight size={16} />}
             </button>
           </form>
 
-          {/* Quick Demo Helper */}
+          {/* Security badge footer */}
           <div
             style={{
-              marginTop: '1.5rem',
+              marginTop: '1.75rem',
               paddingTop: '1.25rem',
               borderTop: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.45rem',
+              color: 'var(--text-sub)',
+              fontSize: '0.75rem',
             }}
           >
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', marginBottom: '0.6rem', textAlign: 'center' }}>
-              Instant 1-Click Demo Fill:
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => handleFillDemo('CUSTOMER')}
-                style={{
-                  padding: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-main)',
-                  cursor: 'pointer',
-                }}
-              >
-                👤 Customer
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillDemo('WORKER')}
-                style={{
-                  padding: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-main)',
-                  cursor: 'pointer',
-                }}
-              >
-                💼 Specialist
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillDemo('ADMIN')}
-                style={{
-                  padding: '0.4rem',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-sm)',
-                  color: 'var(--text-main)',
-                  cursor: 'pointer',
-                }}
-              >
-                🛡️ Admin
-              </button>
-            </div>
+            <ShieldCheck size={14} color="var(--success)" />
+            <span>Encrypted & protected with platform escrow assurance</span>
           </div>
         </div>
 
-        {/* Footer Registration Links */}
+        {/* Registration Links */}
         <div
           style={{
-            marginTop: '1.75rem',
+            marginTop: '2rem',
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
-            gap: '0.6rem',
-            fontSize: '0.85rem',
+            gap: '0.85rem',
+            fontSize: '0.875rem',
             color: 'var(--text-muted)',
           }}
         >
           <div>
-            Don't have a customer account?{' '}
+            Need digital services?{' '}
             <button
               onClick={() => onNavigate('register-customer')}
               style={{
@@ -416,13 +341,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 fontWeight: 700,
                 cursor: 'pointer',
                 textDecoration: 'underline',
+                padding: 0,
               }}
             >
-              Register as Customer
+              Create a Customer Account
             </button>
           </div>
           <div>
-            Want to work and earn?{' '}
+            Are you a specialist?{' '}
             <button
               onClick={() => onNavigate('register-worker')}
               style={{
@@ -432,6 +358,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 fontWeight: 700,
                 cursor: 'pointer',
                 textDecoration: 'underline',
+                padding: 0,
               }}
             >
               Apply as Freelance Specialist
@@ -442,3 +369,5 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     </div>
   );
 };
+
+export default LoginPage;

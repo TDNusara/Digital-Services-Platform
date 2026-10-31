@@ -205,7 +205,7 @@ export const WorkerRegisterPage: React.FC<WorkerRegisterPageProps> = ({
                   <input
                     type="email"
                     className="form-input"
-                    placeholder="worker@example.com"
+                    placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     style={{ paddingLeft: '2.5rem' }}

@@ -50,10 +50,9 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
   orders = [],
   children,
 }) => {
-  const { user, logout, switchDemoAccount } = useAuth();
+  const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
   const [notificationsList, setNotificationsList] = useState<any[]>([]);
 
@@ -75,14 +74,6 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
   useEffect(() => {
     fetchUnreadNotifications();
   }, []);
-
-  const handleDemoSwitch = async (newRole: 'CUSTOMER' | 'WORKER' | 'ADMIN') => {
-    setShowRoleSwitcher(false);
-    await switchDemoAccount(newRole);
-    if (newRole === 'ADMIN') onNavigate('admin-control');
-    else if (newRole === 'WORKER') onNavigate('worker-workspace');
-    else onNavigate('customer-portal');
-  };
 
   // Nav Items by Role
   const customerNavItems = [
@@ -371,71 +362,8 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
             </div>
           </div>
 
-          {/* Right: Role Switcher Pill + Notifications Drawer + Actions */}
+          {/* Right: Notifications Drawer + Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            {/* Quick Demo Role Switcher */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-                className="btn btn-secondary btn-sm"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  fontSize: '0.78rem',
-                  borderColor: 'rgba(99, 102, 241, 0.3)',
-                }}
-              >
-                <Sparkles size={13} color="var(--primary-300)" />
-                <span>Switch Role View</span>
-                <ChevronDown size={12} />
-              </button>
-
-              {showRoleSwitcher && (
-                <div
-                  className="glass-card"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 0.4rem)',
-                    width: '210px',
-                    padding: '0.5rem',
-                    zIndex: 200,
-                    boxShadow: 'var(--shadow-xl)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.25rem',
-                  }}
-                  onMouseLeave={() => setShowRoleSwitcher(false)}
-                >
-                  <div style={{ padding: '0.35rem 0.5rem', fontSize: '0.7rem', color: 'var(--text-sub)', fontWeight: 700 }}>
-                    1-Click Role Switch
-                  </div>
-                  <button
-                    onClick={() => handleDemoSwitch('CUSTOMER')}
-                    className={`btn btn-sm ${role === 'CUSTOMER' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}
-                  >
-                    👤 Customer Hub
-                  </button>
-                  <button
-                    onClick={() => handleDemoSwitch('WORKER')}
-                    className={`btn btn-sm ${role === 'WORKER' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}
-                  >
-                    💼 Specialist Workspace
-                  </button>
-                  <button
-                    onClick={() => handleDemoSwitch('ADMIN')}
-                    className={`btn btn-sm ${role === 'ADMIN' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}
-                  >
-                    🛡️ Admin Operations
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Notification Bell Dropdown */}
             <div style={{ position: 'relative' }}>
               <button

@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   Layers,
-  Sparkles,
   User,
   UserPlus,
   ChevronDown,
   ArrowRight,
   LogOut,
-  ExternalLink,
+  Plus,
+  Menu,
+  X,
+  Shield,
+  Briefcase,
 } from 'lucide-react';
 
 interface PublicNavbarProps {
@@ -22,9 +25,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   setCurrentTab,
   openNewOrderModal,
 }) => {
-  const { user, isAuthenticated, logout, switchDemoAccount } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [showRegisterMenu, setShowRegisterMenu] = useState(false);
-  const [showDemoMenu, setShowDemoMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const getDashboardRoute = () => {
     if (user?.role === 'ADMIN') return 'admin-control';
@@ -32,19 +35,17 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
     return 'customer-portal';
   };
 
-  const getDashboardLabel = () => {
-    if (user?.role === 'ADMIN') return '🛡️ Admin Operations';
-    if (user?.role === 'WORKER') return '💼 Specialist Workspace';
-    return '👤 Customer Workspace';
+  const getRoleBadge = () => {
+    if (user?.role === 'ADMIN') {
+      return { label: 'Admin', color: 'var(--warning)', bg: 'rgba(245, 158, 11, 0.15)', icon: Shield };
+    }
+    if (user?.role === 'WORKER') {
+      return { label: 'Specialist', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.15)', icon: Briefcase };
+    }
+    return { label: 'Customer', color: 'var(--primary-300)', bg: 'rgba(99, 102, 241, 0.15)', icon: User };
   };
 
-  const handleDemoSwitch = async (role: 'CUSTOMER' | 'WORKER' | 'ADMIN') => {
-    setShowDemoMenu(false);
-    await switchDemoAccount(role);
-    if (role === 'ADMIN') setCurrentTab('admin-control');
-    else if (role === 'WORKER') setCurrentTab('worker-workspace');
-    else setCurrentTab('customer-portal');
-  };
+  const roleInfo = getRoleBadge();
 
   return (
     <header
@@ -52,8 +53,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        backgroundColor: 'rgba(11, 15, 25, 0.92)',
+        backgroundColor: 'rgba(11, 15, 25, 0.94)',
         backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
@@ -68,12 +70,16 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
       >
         {/* Brand Logo */}
         <div
-          onClick={() => setCurrentTab('home')}
+          onClick={() => {
+            setCurrentTab('home');
+            setMobileMenuOpen(false);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
             cursor: 'pointer',
+            userSelect: 'none',
           }}
         >
           <div
@@ -91,42 +97,50 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <Layers size={20} color="#FFFFFF" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
               <span style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
                 Task<span style={{ color: 'var(--primary-400)' }}>Pulse</span>
               </span>
               <span
                 style={{
-                  fontSize: '0.65rem',
+                  fontSize: '0.62rem',
                   fontWeight: 700,
-                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                  backgroundColor: 'rgba(99, 102, 241, 0.18)',
                   color: 'var(--primary-300)',
-                  padding: '0.1rem 0.4rem',
+                  padding: '0.12rem 0.45rem',
                   borderRadius: 'var(--radius-full)',
-                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                  border: '1px solid rgba(99, 102, 241, 0.35)',
+                  letterSpacing: '0.04em',
                 }}
               >
-                SERVICES
+                PLATFORM
               </span>
             </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-sub)' }}>
-              Managed Digital & Document Services
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-sub)', letterSpacing: '0.01em' }}>
+              Verified Digital & Document Services
             </div>
           </div>
         </div>
 
-        {/* Public Navigation Links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
+        {/* Desktop Public Navigation Links */}
+        <nav
+          style={{
+            display: 'none',
+            alignItems: 'center',
+            gap: '2rem',
+          }}
+          className="desktop-nav"
+        >
           <button
             onClick={() => setCurrentTab('home')}
             style={{
               background: 'none',
               border: 'none',
-              color: currentTab === 'home' ? 'var(--primary-300)' : 'var(--text-muted)',
+              color: currentTab === 'home' || currentTab === 'guest-home' ? 'var(--primary-300)' : 'var(--text-muted)',
               fontSize: '0.925rem',
               fontWeight: 600,
               cursor: 'pointer',
-              borderBottom: currentTab === 'home' ? '2px solid var(--primary-500)' : '2px solid transparent',
+              borderBottom: currentTab === 'home' || currentTab === 'guest-home' ? '2px solid var(--primary-500)' : '2px solid transparent',
               paddingBottom: '0.25rem',
               transition: 'all var(--transition-fast)',
             }}
@@ -151,80 +165,54 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           </button>
         </nav>
 
-        {/* Right Actions Cluster */}
+        {/* Right Desktop Actions Cluster */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          {/* Quick Demo Switcher Dropdown (Unobtrusive) */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowDemoMenu(!showDemoMenu)}
-              className="btn btn-secondary btn-sm"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                fontSize: '0.78rem',
-                borderColor: 'rgba(99, 102, 241, 0.3)',
-              }}
-            >
-              <Sparkles size={13} color="var(--primary-300)" />
-              <span>Role Tester</span>
-              <ChevronDown size={12} />
-            </button>
-
-            {showDemoMenu && (
-              <div
-                className="glass-card"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: 'calc(100% + 0.4rem)',
-                  width: '210px',
-                  padding: '0.5rem',
-                  zIndex: 200,
-                  boxShadow: 'var(--shadow-xl)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                }}
-                onMouseLeave={() => setShowDemoMenu(false)}
-              >
-                <div style={{ padding: '0.35rem 0.5rem', fontSize: '0.7rem', color: 'var(--text-sub)', fontWeight: 700, textTransform: 'uppercase' }}>
-                  1-Click Switch Role
-                </div>
-                <button
-                  onClick={() => handleDemoSwitch('CUSTOMER')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}
-                >
-                  👤 Customer Hub
-                </button>
-                <button
-                  onClick={() => handleDemoSwitch('WORKER')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}
-                >
-                  💼 Specialist Workspace
-                </button>
-                <button
-                  onClick={() => handleDemoSwitch('ADMIN')}
-                  className="btn btn-secondary btn-sm"
-                  style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%' }}
-                >
-                  🛡️ Admin Control
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* If Logged In: Enter Workspace button */}
           {isAuthenticated ? (
+            /* Logged In State: User Portal Button & Profile */
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  padding: '0.35rem 0.75rem 0.35rem 0.45rem',
+                  borderRadius: 'var(--radius-full)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              >
+                <div
+                  style={{
+                    width: '1.85rem',
+                    height: '1.85rem',
+                    borderRadius: '50%',
+                    backgroundColor: roleInfo.bg,
+                    color: roleInfo.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  {user?.fullName?.charAt(0) || 'U'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.2 }}>
+                    {user?.fullName || 'User'}
+                  </span>
+                  <span style={{ fontSize: '0.65rem', color: roleInfo.color, fontWeight: 700 }}>
+                    {roleInfo.label}
+                  </span>
+                </div>
+              </div>
+
               <button
                 className="btn btn-primary btn-sm"
                 onClick={() => setCurrentTab(getDashboardRoute())}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 0.95rem' }}
               >
-                <span>{getDashboardLabel()}</span>
+                <span>Dashboard</span>
                 <ArrowRight size={14} />
               </button>
 
@@ -233,34 +221,62 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                   logout();
                   setCurrentTab('login');
                 }}
-                title="Logout"
+                title="Sign Out"
                 className="btn btn-secondary btn-sm"
-                style={{ padding: '0.45rem' }}
+                style={{
+                  padding: '0.55rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-sub)',
+                }}
               >
                 <LogOut size={15} />
               </button>
             </div>
           ) : (
-            /* If Not Logged In: Sign In & Register */
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            /* Unauthenticated State: Sign In & Registration Options */
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={openNewOrderModal}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.55rem 0.85rem' }}
+              >
+                <Plus size={14} />
+                <span>Request Service</span>
+              </button>
+
               <button
                 className={`btn btn-sm ${currentTab === 'login' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setCurrentTab('login')}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.55rem 0.95rem',
+                  fontWeight: 600,
+                }}
               >
                 <User size={14} />
                 <span>Sign In</span>
               </button>
 
+              {/* Clean Registration Dropdown */}
               <div style={{ position: 'relative' }}>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => setShowRegisterMenu(!showRegisterMenu)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.55rem 0.95rem',
+                    fontWeight: 600,
+                  }}
                 >
                   <UserPlus size={14} />
                   <span>Get Started</span>
-                  <ChevronDown size={12} />
+                  <ChevronDown size={13} />
                 </button>
 
                 {showRegisterMenu && (
@@ -270,13 +286,15 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                       position: 'absolute',
                       right: 0,
                       top: 'calc(100% + 0.5rem)',
-                      width: '230px',
+                      width: '260px',
                       padding: '0.5rem',
                       zIndex: 200,
                       boxShadow: 'var(--shadow-xl)',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '0.25rem',
+                      gap: '0.35rem',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-default)',
                     }}
                     onMouseLeave={() => setShowRegisterMenu(false)}
                   >
@@ -286,11 +304,22 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                         setCurrentTab('register-customer');
                       }}
                       className="btn btn-secondary btn-sm"
-                      style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%', padding: '0.6rem 0.75rem' }}
+                      style={{
+                        justifyContent: 'flex-start',
+                        textAlign: 'left',
+                        width: '100%',
+                        padding: '0.75rem 0.85rem',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.65rem',
+                      }}
                     >
+                      <User size={17} color="var(--primary-300)" style={{ marginTop: '2px', flexShrink: 0 }} />
                       <div>
-                        <div style={{ fontWeight: 600, color: '#FFFFFF' }}>👤 Register as Customer</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)' }}>For documents, academic & business tasks</div>
+                        <div style={{ fontWeight: 600, color: '#FFFFFF', fontSize: '0.85rem' }}>Customer Account</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)', marginTop: '2px' }}>
+                          Order verified formatting & digital tasks
+                        </div>
                       </div>
                     </button>
 
@@ -300,11 +329,22 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                         setCurrentTab('register-worker');
                       }}
                       className="btn btn-secondary btn-sm"
-                      style={{ justifyContent: 'flex-start', textAlign: 'left', width: '100%', padding: '0.6rem 0.75rem' }}
+                      style={{
+                        justifyContent: 'flex-start',
+                        textAlign: 'left',
+                        width: '100%',
+                        padding: '0.75rem 0.85rem',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.65rem',
+                      }}
                     >
+                      <Briefcase size={17} color="#38BDF8" style={{ marginTop: '2px', flexShrink: 0 }} />
                       <div>
-                        <div style={{ fontWeight: 600, color: '#38BDF8' }}>💼 Apply as Specialist</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-sub)' }}>For freelance document experts</div>
+                        <div style={{ fontWeight: 600, color: '#38BDF8', fontSize: '0.85rem' }}>Specialist Application</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)', marginTop: '2px' }}>
+                          Deliver tasks and earn on completion
+                        </div>
                       </div>
                     </button>
                   </div>
@@ -312,8 +352,120 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               </div>
             </div>
           )}
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="btn btn-secondary btn-sm mobile-menu-btn"
+            style={{
+              padding: '0.55rem',
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            aria-label="Toggle Navigation"
+          >
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div
+          style={{
+            borderTop: '1px solid var(--border-subtle)',
+            backgroundColor: 'rgba(11, 15, 25, 0.98)',
+            padding: '1rem 1.5rem 1.5rem 1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+          }}
+        >
+          <button
+            onClick={() => {
+              setCurrentTab('home');
+              setMobileMenuOpen(false);
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ justifyContent: 'flex-start' }}
+          >
+            Home
+          </button>
+          <button
+            onClick={() => {
+              setCurrentTab('catalog');
+              setMobileMenuOpen(false);
+            }}
+            className="btn btn-secondary btn-sm"
+            style={{ justifyContent: 'flex-start' }}
+          >
+            Services Catalog
+          </button>
+          {!isAuthenticated ? (
+            <>
+              <button
+                onClick={() => {
+                  setCurrentTab('login');
+                  setMobileMenuOpen(false);
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentTab('register-customer');
+                  setMobileMenuOpen(false);
+                }}
+                className="btn btn-primary btn-sm"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Register as Customer
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentTab('register-worker');
+                  setMobileMenuOpen(false);
+                }}
+                className="btn btn-secondary btn-sm"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Apply as Specialist
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => {
+                setCurrentTab(getDashboardRoute());
+                setMobileMenuOpen(false);
+              }}
+              className="btn btn-primary btn-sm"
+              style={{ justifyContent: 'flex-start' }}
+            >
+              Go to Dashboard
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* CSS helper for responsive desktop nav */}
+      <style>{`
+        @media (min-width: 768px) {
+          .desktop-nav {
+            display: flex !important;
+          }
+          .mobile-menu-btn {
+            display: none !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .mobile-menu-btn {
+            display: flex !important;
+          }
+        }
+      `}</style>
     </header>
   );
 };
