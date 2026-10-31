@@ -173,14 +173,20 @@ const MainApplication: React.FC = () => {
   const [workerSubTab, setWorkerSubTab] = useState<string>('workspace');
   const [adminSubTab, setAdminSubTab] = useState<'orders' | 'services' | 'workers' | 'escrow'>('orders');
 
-  // Redirect on successful authentication
+  // Redirect on successful authentication or default paths
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'CUSTOMER' && ['login', 'register-customer'].includes(currentTab)) {
+    if (!isAuthenticated) return;
+
+    if (user?.role === 'CUSTOMER' && ['login', 'register-customer'].includes(currentTab)) {
       navigateTo('customer-portal', true);
-    } else if (isAuthenticated && user?.role === 'WORKER' && ['login', 'register-worker'].includes(currentTab)) {
-      navigateTo('worker-workspace', true);
-    } else if (isAuthenticated && user?.role === 'ADMIN' && currentTab === 'login') {
-      navigateTo('admin-control', true);
+    } else if (user?.role === 'WORKER') {
+      if (['login', 'register-worker', 'home', 'customer-portal'].includes(currentTab)) {
+        navigateTo('worker-workspace', true);
+      }
+    } else if (user?.role === 'ADMIN') {
+      if (['login', 'home', 'customer-portal'].includes(currentTab)) {
+        navigateTo('admin-control', true);
+      }
     }
   }, [isAuthenticated, user?.role, currentTab]);
 
@@ -195,13 +201,10 @@ const MainApplication: React.FC = () => {
     );
   }
 
-  return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div className="bg-mesh" />
-
-      {/* MAIN APPLICATION ROUTING */}
-      {/* 1. AUTH PAGES (Login, Customer Register, Worker Application) with Navigation Bar */}
-      {currentTab === 'login' && (
+  const renderMainContent = () => {
+    // 1. Auth Pages
+    if (currentTab === 'login') {
+      return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <PublicNavbar
             currentTab={currentTab}
@@ -212,9 +215,11 @@ const MainApplication: React.FC = () => {
             <LoginPage onNavigate={(page) => navigateTo(page as PageRoute)} />
           </main>
         </div>
-      )}
+      );
+    }
 
-      {currentTab === 'register-customer' && (
+    if (currentTab === 'register-customer') {
+      return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <PublicNavbar
             currentTab={currentTab}
@@ -225,9 +230,11 @@ const MainApplication: React.FC = () => {
             <CustomerRegisterPage onNavigate={(page) => navigateTo(page as PageRoute)} />
           </main>
         </div>
-      )}
+      );
+    }
 
-      {currentTab === 'register-worker' && (
+    if (currentTab === 'register-worker') {
+      return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <PublicNavbar
             currentTab={currentTab}
@@ -238,13 +245,15 @@ const MainApplication: React.FC = () => {
             <WorkerRegisterPage onNavigate={(page) => navigateTo(page as PageRoute)} categories={categories} />
           </main>
         </div>
-      )}
+      );
+    }
 
-      {/* 2. GUEST USER HOME PAGE (For visitors / non-authenticated users or when explicitly viewing guest view) */}
-      {(
-        (!isAuthenticated && ['home', 'guest-home', 'catalog', 'customer-portal'].includes(currentTab)) ||
-        (isAuthenticated && currentTab === 'guest-home')
-      ) && (
+    // 2. Explicit Guest View or Non-authenticated users
+    if (
+      (!isAuthenticated && ['home', 'guest-home', 'catalog', 'customer-portal'].includes(currentTab)) ||
+      (isAuthenticated && currentTab === 'guest-home')
+    ) {
+      return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {isAuthenticated && (
             <div
@@ -292,35 +301,12 @@ const MainApplication: React.FC = () => {
             />
           </main>
         </div>
-      )}
+      );
+    }
 
-      {/* 3. REGISTERED USER HOME PAGE & WORKSPACE WITH SIDE NAVBAR */}
-      {isAuthenticated && user?.role === 'CUSTOMER' && (['home', 'catalog', 'customer-portal'].includes(currentTab)) && (
-        <RoleSidebarLayout
-          role="CUSTOMER"
-          activeSubTab={currentTab === 'catalog' ? 'services' : customerSubTab}
-          onSelectSubTab={(tab) => {
-            if (currentTab !== 'customer-portal') navigateTo('customer-portal');
-            setCustomerSubTab(tab as any);
-          }}
-          onNavigate={(route) => navigateTo(route as PageRoute)}
-          openNewOrderModal={() => handleOpenOrderModal(false, null)}
-          orders={orders}
-        >
-          <CustomerPortal
-            orders={orders}
-            onOpenOrderDetails={setSelectedOrderDetails}
-            onOpenNewOrderModal={(customMode, service) => handleOpenOrderModal(Boolean(customMode), service || null)}
-            categories={categories}
-            services={services}
-            activeTab={currentTab === 'catalog' ? 'services' : customerSubTab}
-            onTabChange={(tab) => setCustomerSubTab(tab)}
-          />
-        </RoleSidebarLayout>
-      )}
-
-      {/* CASE E: INDEPENDENT SPECIALIST WORKSPACE WITH DEDICATED SIDEBAR */}
-      {currentTab === 'worker-workspace' && (
+    // 3. Specialist / Worker Workspace
+    if (user?.role === 'WORKER' || currentTab === 'worker-workspace') {
+      return (
         <RoleSidebarLayout
           role="WORKER"
           activeSubTab={workerSubTab}
@@ -349,10 +335,12 @@ const MainApplication: React.FC = () => {
             />
           )}
         </RoleSidebarLayout>
-      )}
+      );
+    }
 
-      {/* CASE F: INDEPENDENT ADMIN CONTROL CENTER WITH DEDICATED SIDEBAR */}
-      {currentTab === 'admin-control' && (
+    // 4. Admin Control Center
+    if (user?.role === 'ADMIN' || currentTab === 'admin-control') {
+      return (
         <RoleSidebarLayout
           role="ADMIN"
           activeSubTab={adminSubTab}
@@ -385,7 +373,40 @@ const MainApplication: React.FC = () => {
             />
           )}
         </RoleSidebarLayout>
-      )}
+      );
+    }
+
+    // 5. Customer Workspace (Default authenticated view for Customers or fallback)
+    return (
+      <RoleSidebarLayout
+        role="CUSTOMER"
+        activeSubTab={currentTab === 'catalog' ? 'services' : customerSubTab}
+        onSelectSubTab={(tab) => {
+          if (currentTab !== 'customer-portal') navigateTo('customer-portal');
+          setCustomerSubTab(tab as any);
+        }}
+        onNavigate={(route) => navigateTo(route as PageRoute)}
+        openNewOrderModal={() => handleOpenOrderModal(false, null)}
+        orders={orders}
+      >
+        <CustomerPortal
+          orders={orders}
+          onOpenOrderDetails={setSelectedOrderDetails}
+          onOpenNewOrderModal={(customMode, service) => handleOpenOrderModal(Boolean(customMode), service || null)}
+          categories={categories}
+          services={services}
+          activeTab={currentTab === 'catalog' ? 'services' : customerSubTab}
+          onTabChange={(tab) => setCustomerSubTab(tab)}
+        />
+      </RoleSidebarLayout>
+    );
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="bg-mesh" />
+
+      {renderMainContent()}
 
       {/* Modals for Orders & Auth */}
       <NewOrderModal

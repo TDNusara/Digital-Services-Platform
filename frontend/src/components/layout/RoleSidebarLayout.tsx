@@ -137,6 +137,19 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
 
   const roleStyle = getRoleHeader();
 
+  const handleHomeLogoClick = () => {
+    if (role === 'ADMIN') {
+      onNavigate('admin-control');
+      onSelectSubTab('orders');
+    } else if (role === 'WORKER') {
+      onNavigate('worker-workspace');
+      onSelectSubTab('workspace');
+    } else {
+      onNavigate('customer-portal');
+      onSelectSubTab('home');
+    }
+  };
+
   return (
     <div className="app-shell">
       {/* 1. Independent Role Sidebar */}
@@ -145,10 +158,7 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
         <div className="app-sidebar-header">
           {!isCollapsed ? (
             <div
-              onClick={() => {
-                onSelectSubTab('home');
-                if (role !== 'CUSTOMER') onNavigate('customer-portal');
-              }}
+              onClick={handleHomeLogoClick}
               style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer' }}
             >
               <div
@@ -184,10 +194,7 @@ export const RoleSidebarLayout: React.FC<RoleSidebarLayoutProps> = ({
             </div>
           ) : (
             <div
-              onClick={() => {
-                onSelectSubTab('home');
-                if (role !== 'CUSTOMER') onNavigate('customer-portal');
-              }}
+              onClick={handleHomeLogoClick}
               style={{
                 width: '2.2rem',
                 height: '2.2rem',
